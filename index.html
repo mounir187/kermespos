@@ -107,10 +107,7 @@
     .cashier-page.dark .dark-toggle { background: #6366f1; }
     .cashier-page.dark .dark-toggle::after { transform: translateX(20px); }
 
-    .cashier-body { display: flex; flex: 1; overflow: hidden; }
-
-    /* Left: Menu */
-    .menu-panel { flex: 1; padding: 20px; overflow-y: auto; max-height: calc(100vh - 57px); }
+    .menu-panel { padding: 20px; overflow-y: auto; max-width: 900px; margin: 0 auto; }
     .panel-title {
       font-size: 0.8rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase;
       letter-spacing: 1px; margin-bottom: 14px;
@@ -147,36 +144,56 @@
       display: flex; align-items: center; justify-content: center; border-radius: 50%;
     }
     .menu-item .m-del:hover { color: var(--del-color); background: var(--del-bg); }
-    .add-item-bar { display: flex; gap: 8px; flex-wrap: wrap; }
-    .add-item-bar input, .add-item-bar select {
-      padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px;
-      font-size: 0.85rem; outline: none; font-family: inherit;
-      background: var(--card); color: var(--text);
+    /* Add Item Modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      z-index: 200; align-items: center; justify-content: center;
+      backdrop-filter: blur(4px);
     }
-    .add-item-bar input:focus, .add-item-bar select:focus { border-color: var(--accent); }
-    .add-item-bar input:first-child { flex: 1; min-width: 90px; }
-    .add-item-bar input:nth-child(2) { width: 70px; }
-    .add-item-bar select { width: 110px; }
-    .add-item-bar button {
-      background: var(--accent); color: #fff; border: none; padding: 9px 16px;
-      border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.85rem; font-family: inherit;
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: var(--card); border-radius: 16px; padding: 28px; width: 360px;
+      max-width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     }
-    .add-item-bar button:hover { background: var(--accent-hover); }
+    .modal h3 { font-size: 1.1rem; font-weight: 800; margin-bottom: 16px; color: var(--text); }
+    .modal-field { margin-bottom: 12px; }
+    .modal-field label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-dim); margin-bottom: 5px; }
+    .modal-field input, .modal-field select {
+      width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 0.95rem; outline: none; font-family: inherit;
+      background: var(--input-bg); color: var(--text);
+    }
+    .modal-field input:focus, .modal-field select:focus { border-color: var(--accent); }
+    .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
+    .modal-actions button {
+      flex: 1; padding: 10px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;
+      cursor: pointer; font-family: inherit; border: none;
+    }
+    .modal-cancel { background: var(--input-bg); color: var(--text-mid); border: 1px solid var(--border) !important; }
+    .modal-confirm { background: var(--accent); color: #fff; }
+    .modal-confirm:hover { background: var(--accent-hover); }
+    .add-item-topbtn {
+      padding: 7px 14px; border-radius: 8px; border: none;
+      background: var(--accent); color: #fff; cursor: pointer; font-size: 0.8rem;
+      font-weight: 700; font-family: inherit; transition: all 0.15s;
+    }
+    .add-item-topbtn:hover { background: var(--accent-hover); }
 
-    /* Right: Cart */
-    .cart-panel {
-      width: 380px; min-width: 340px; background: var(--cart-bg); border-left: 1px solid var(--border);
-      display: flex; flex-direction: column; max-height: calc(100vh - 57px);
+    /* Cart Section (below menu) */
+    .cart-section {
+      background: var(--card); border-radius: 14px; padding: 18px;
+      margin-top: 20px; border: 1px solid var(--border-light);
     }
-    .cart-header { padding: 16px 20px; border-bottom: 1px solid var(--border-light); }
+    .cart-section .cart-header-row {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+    }
     .customer-input {
       width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 10px;
       font-size: 0.95rem; outline: none; font-family: inherit; font-weight: 500;
-      background: var(--input-bg); color: var(--text);
+      background: var(--input-bg); color: var(--text); margin-bottom: 10px;
     }
     .customer-input:focus { border-color: var(--accent); }
-    .cart-items { flex: 1; overflow-y: auto; padding: 8px 20px; }
-    .cart-empty { color: var(--text-dim); text-align: center; padding: 40px 10px; font-size: 0.9rem; }
+    .cart-empty { color: var(--text-dim); text-align: center; padding: 20px 10px; font-size: 0.9rem; }
     .cart-item { padding: 12px 0; border-bottom: 1px solid var(--border-light); }
     .cart-item:last-child { border-bottom: none; }
     .cart-item-top { display: flex; justify-content: space-between; align-items: center; }
@@ -199,7 +216,7 @@
     .comment-input:focus { border-color: var(--accent); }
     .comment-input::placeholder { color: var(--text-dim); }
 
-    .cart-footer { padding: 16px 20px; border-top: 1px solid var(--border-light); background: var(--footer-bg); }
+    .cart-footer { padding-top: 14px; margin-top: 10px; border-top: 1px solid var(--border-light); }
     .cart-total-row {
       display: flex; justify-content: space-between; margin-bottom: 12px;
       font-weight: 800; font-size: 1.15rem;
@@ -370,9 +387,7 @@
     /* Mobile */
     @media (max-width: 768px) {
       .role-cards { flex-direction: column; }
-      .cashier-body { flex-direction: column; }
-      .cart-panel { width: 100%; min-width: 0; border-left: none; border-top: 1px solid var(--border); max-height: none; }
-      .menu-panel { max-height: none; }
+      .menu-panel { padding: 14px; }
     }
   </style>
 </head>
@@ -416,52 +431,74 @@
       <button class="topbar-btn" onclick="leavePage()">Leave</button>
     </div>
   </div>
-  <div class="cashier-body">
-    <div class="menu-panel">
-      <div class="panel-title">Menu Items</div>
-      <div class="cat-tabs" id="catTabs"></div>
-      <div class="menu-grid" id="menuGrid"></div>
-      <div class="add-item-bar">
-        <input id="newItemName" placeholder="Item name...">
-        <input id="newItemPrice" type="number" step="0.01" min="0" placeholder="Price">
-        <select id="newItemCat">
-          <option value="Food">Food</option>
-          <option value="Drinks">Drinks</option>
-          <option value="Desserts">Desserts</option>
-          <option value="Other">Other</option>
-        </select>
-        <button onclick="addMenuItem()">+ Add</button>
+  <div class="menu-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div class="panel-title" style="margin-bottom:0">Menu Items</div>
+      <button class="add-item-topbtn" onclick="openAddModal()">+ Add Item</button>
+    </div>
+    <div class="cat-tabs" id="catTabs"></div>
+    <div class="menu-grid" id="menuGrid"></div>
+
+    <!-- Cart Section -->
+    <div class="cart-section">
+      <div class="cart-header-row">
+        <div class="panel-title" style="margin-bottom:0">Current Order</div>
+      </div>
+      <input class="customer-input" type="text" id="customerName" placeholder="Customer name..." autocomplete="off">
+      <div id="cartList"></div>
+      <div id="cartFooter" style="display:none">
+        <div class="cart-footer">
+          <div class="cart-total-row">
+            <span>Total</span>
+            <span class="cart-total-amount" id="totalAmount">$0.00</span>
+          </div>
+          <button class="send-btn" id="sendBtn" onclick="sendOrder()">Send to Kitchen</button>
+          <div class="change-calc">
+            <div class="calc-title">Change Calculator</div>
+            <div class="currency-tabs">
+              <button class="currency-tab active" id="tab-usd" onclick="setCurrency('usd')">USD $</button>
+              <button class="currency-tab" id="tab-lbp" onclick="setCurrency('lbp')">LBP L.L.</button>
+            </div>
+            <div class="calc-display">
+              <span class="calc-label" id="receivedLabel">Received $</span>
+              <span id="receivedDisplay">0</span>
+            </div>
+            <div class="quick-cash" id="quickCash"></div>
+            <div class="change-result zero" id="changeResult">
+              <span class="change-label">Change</span>
+              <span id="changeAmount">Tap an amount above</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="cart-panel">
-      <div class="cart-header">
-        <div class="panel-title">Current Order</div>
-        <input class="customer-input" type="text" id="customerName" placeholder="Customer name..." autocomplete="off">
-      </div>
-      <div class="cart-items" id="cartList"></div>
-      <div class="cart-footer" id="cartFooter" style="display:none">
-        <div class="cart-total-row">
-          <span>Total</span>
-          <span class="cart-total-amount" id="totalAmount">$0.00</span>
-        </div>
-        <button class="send-btn" id="sendBtn" onclick="sendOrder()">Send to Kitchen</button>
-        <div class="change-calc">
-          <div class="calc-title">Change Calculator</div>
-          <div class="currency-tabs">
-            <button class="currency-tab active" id="tab-usd" onclick="setCurrency('usd')">USD $</button>
-            <button class="currency-tab" id="tab-lbp" onclick="setCurrency('lbp')">LBP L.L.</button>
-          </div>
-          <div class="calc-display">
-            <span class="calc-label" id="receivedLabel">Received $</span>
-            <span id="receivedDisplay">0</span>
-          </div>
-          <div class="quick-cash" id="quickCash"></div>
-          <div class="change-result zero" id="changeResult">
-            <span class="change-label">Change</span>
-            <span id="changeAmount">Tap an amount above</span>
-          </div>
-        </div>
-      </div>
+  </div>
+</div>
+
+<!-- Add Item Modal -->
+<div class="modal-overlay" id="addItemModal">
+  <div class="modal">
+    <h3>Add Menu Item</h3>
+    <div class="modal-field">
+      <label>Item Name</label>
+      <input type="text" id="newItemName" placeholder="e.g. Pizza...">
+    </div>
+    <div class="modal-field">
+      <label>Price ($)</label>
+      <input type="number" id="newItemPrice" step="0.01" min="0" placeholder="0.00">
+    </div>
+    <div class="modal-field">
+      <label>Category</label>
+      <select id="newItemCat">
+        <option value="Food">Food</option>
+        <option value="Drinks">Drinks</option>
+        <option value="Desserts">Desserts</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeAddModal()">Cancel</button>
+      <button class="modal-confirm" onclick="addMenuItem()">Add Item</button>
     </div>
   </div>
 </div>
@@ -648,16 +685,26 @@ function renderMenu() {
     </div>
   `).join('');
 }
+function openAddModal() {
+  document.getElementById('newItemName').value = '';
+  document.getElementById('newItemPrice').value = '';
+  document.getElementById('newItemCat').value = 'Food';
+  document.getElementById('addItemModal').classList.add('show');
+  setTimeout(() => document.getElementById('newItemName').focus(), 100);
+}
+function closeAddModal() {
+  document.getElementById('addItemModal').classList.remove('show');
+}
 function addMenuItem() {
   const name = document.getElementById('newItemName').value.trim();
   const price = parseFloat(document.getElementById('newItemPrice').value);
   const category = document.getElementById('newItemCat').value;
-  if (!name || isNaN(price) || price < 0) return;
+  if (!name || isNaN(price) || price < 0) { showToast('Fill in name and price', '#ef4444'); return; }
   const item = { id: Date.now(), name, price, category };
   menu.push(item); saveState(); renderCatTabs(); renderMenu();
   sendMsg({ type: 'menu-add', item });
-  document.getElementById('newItemName').value = '';
-  document.getElementById('newItemPrice').value = '';
+  closeAddModal();
+  showToast('Item added!');
 }
 function deleteMenuItem(id) {
   if (!confirm('Remove this item?')) return;
@@ -684,7 +731,7 @@ function renderCart() {
   const list = document.getElementById('cartList');
   const footer = document.getElementById('cartFooter');
   if (cart.length === 0) {
-    list.innerHTML = '<div class="cart-empty">Tap menu items to add them to the order</div>';
+    list.innerHTML = '<div class="cart-empty">Tap menu items to add them</div>';
     footer.style.display = 'none'; return;
   }
   list.innerHTML = cart.map(item => `
