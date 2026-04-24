@@ -107,7 +107,8 @@
     .cashier-page.dark .dark-toggle { background: #6366f1; }
     .cashier-page.dark .dark-toggle::after { transform: translateX(20px); }
 
-    .menu-panel { padding: 20px; overflow-y: auto; max-width: 900px; margin: 0 auto; }
+    .cashier-body { display: flex; flex: 1; overflow: hidden; }
+    .menu-panel { flex: 1; padding: 20px; overflow-y: auto; max-height: calc(100vh - 57px); }
     .panel-title {
       font-size: 0.8rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase;
       letter-spacing: 1px; margin-bottom: 14px;
@@ -179,21 +180,28 @@
     }
     .add-item-topbtn:hover { background: var(--accent-hover); }
 
-    /* Cart Section (below menu) */
-    .cart-section {
-      background: var(--card); border-radius: 14px; padding: 18px;
-      margin-top: 20px; border: 1px solid var(--border-light);
+    /* Right: Order Panel */
+    .order-panel {
+      width: 380px; min-width: 340px; background: var(--cart-bg); border-left: 1px solid var(--border);
+      display: flex; flex-direction: column; max-height: calc(100vh - 57px); overflow-y: auto;
     }
-    .cart-section .cart-header-row {
-      display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
-    }
+    .order-panel-inner { padding: 16px 20px; }
     .customer-input {
       width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 10px;
       font-size: 0.95rem; outline: none; font-family: inherit; font-weight: 500;
       background: var(--input-bg); color: var(--text); margin-bottom: 10px;
     }
     .customer-input:focus { border-color: var(--accent); }
-    .cart-empty { color: var(--text-dim); text-align: center; padding: 20px 10px; font-size: 0.9rem; }
+    /* Cart items under menu */
+    .cart-items-section {
+      background: var(--card); border-radius: 12px; padding: 14px;
+      margin-top: 16px; border: 1px solid var(--border-light);
+    }
+    .cart-items-section .cart-section-title {
+      font-size: 0.8rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase;
+      letter-spacing: 1px; margin-bottom: 8px;
+    }
+    .cart-empty { color: var(--text-dim); text-align: center; padding: 16px 10px; font-size: 0.85rem; }
     .cart-item { padding: 12px 0; border-bottom: 1px solid var(--border-light); }
     .cart-item:last-child { border-bottom: none; }
     .cart-item-top { display: flex; justify-content: space-between; align-items: center; }
@@ -216,7 +224,7 @@
     .comment-input:focus { border-color: var(--accent); }
     .comment-input::placeholder { color: var(--text-dim); }
 
-    .cart-footer { padding-top: 14px; margin-top: 10px; border-top: 1px solid var(--border-light); }
+    .cart-footer { padding-top: 14px; margin-top: 14px; border-top: 1px solid var(--border-light); }
     .cart-total-row {
       display: flex; justify-content: space-between; margin-bottom: 12px;
       font-weight: 800; font-size: 1.15rem;
@@ -387,7 +395,9 @@
     /* Mobile */
     @media (max-width: 768px) {
       .role-cards { flex-direction: column; }
-      .menu-panel { padding: 14px; }
+      .cashier-body { flex-direction: column; }
+      .order-panel { width: 100%; min-width: 0; border-left: none; border-top: 1px solid var(--border); max-height: none; }
+      .menu-panel { max-height: none; padding: 14px; }
     }
   </style>
 </head>
@@ -431,23 +441,30 @@
       <button class="topbar-btn" onclick="leavePage()">Leave</button>
     </div>
   </div>
-  <div class="menu-panel">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-      <div class="panel-title" style="margin-bottom:0">Menu Items</div>
-      <button class="add-item-topbtn" onclick="openAddModal()">+ Add Item</button>
-    </div>
-    <div class="cat-tabs" id="catTabs"></div>
-    <div class="menu-grid" id="menuGrid"></div>
-
-    <!-- Cart Section -->
-    <div class="cart-section">
-      <div class="cart-header-row">
-        <div class="panel-title" style="margin-bottom:0">Current Order</div>
+  <div class="cashier-body">
+    <!-- Left: Menu + Selected Items -->
+    <div class="menu-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div class="panel-title" style="margin-bottom:0">Menu Items</div>
+        <button class="add-item-topbtn" onclick="openAddModal()">+ Add Item</button>
       </div>
-      <input class="customer-input" type="text" id="customerName" placeholder="Customer name..." autocomplete="off">
-      <div id="cartList"></div>
-      <div id="cartFooter" style="display:none">
-        <div class="cart-footer">
+      <div class="cat-tabs" id="catTabs"></div>
+      <div class="menu-grid" id="menuGrid"></div>
+
+      <!-- Selected Items (below menu) -->
+      <div class="cart-items-section">
+        <div class="cart-section-title">Selected Items</div>
+        <div id="cartList"></div>
+      </div>
+    </div>
+
+    <!-- Right: Order Panel (name, total, send, change) -->
+    <div class="order-panel">
+      <div class="order-panel-inner">
+        <div class="panel-title">Current Order</div>
+        <input class="customer-input" type="text" id="customerName" placeholder="Customer name..." autocomplete="off">
+        <div id="cartSummary"></div>
+        <div id="cartFooter" style="display:none">
           <div class="cart-total-row">
             <span>Total</span>
             <span class="cart-total-amount" id="totalAmount">$0.00</span>
@@ -730,10 +747,13 @@ function updateComment(name, comment) {
 function renderCart() {
   const list = document.getElementById('cartList');
   const footer = document.getElementById('cartFooter');
+  const summary = document.getElementById('cartSummary');
   if (cart.length === 0) {
     list.innerHTML = '<div class="cart-empty">Tap menu items to add them</div>';
+    summary.innerHTML = '<div class="cart-empty">No items yet</div>';
     footer.style.display = 'none'; return;
   }
+  // Full cart with controls (left panel, under menu)
   list.innerHTML = cart.map(item => `
     <div class="cart-item">
       <div class="cart-item-top">
@@ -751,6 +771,13 @@ function renderCart() {
         value="${escAttr(item.comment)}" onchange="updateComment('${esc(item.name)}', this.value)">
     </div>
   `).join('');
+  // Quick summary (right panel)
+  summary.innerHTML = cart.map(item =>
+    `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-light);font-size:0.85rem;">
+      <span>${item.qty}x ${escHtml(item.name)}</span>
+      <span style="font-weight:700;color:var(--accent)">$${(item.price * item.qty).toFixed(2)}</span>
+    </div>`
+  ).join('');
   const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
   document.getElementById('totalAmount').textContent = '$' + total.toFixed(2);
   footer.style.display = 'block';
