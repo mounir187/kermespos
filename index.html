@@ -764,7 +764,8 @@ function renderQuickCash() {
   updateReceivedDisplay();
 }
 function setReceived(amount) {
-  receivedAmount = amount;
+  if (amount === 0) { receivedAmount = 0; }
+  else { receivedAmount += amount; }
   updateReceivedDisplay();
   calcChange();
 }
