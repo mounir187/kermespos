@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kermess POS</title>
+  <!-- PeerJS for WebRTC peer-to-peer communication -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- SheetJS for Excel export -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; min-height: 100vh; }
+
+    /* ===== LANDING PAGE ===== */
+    .landing {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 20px; background: linear-gradient(135deg, #1e3a5f 0%, #0f1b2d 100%);
+      color: white;
+    }
+    .landing h1 { font-size: 2.2rem; margin-bottom: 8px; }
+    .landing .subtitle { color: #7eb8da; margin-bottom: 40px; font-size: 1.1rem; }
+    .landing-card {
+      background: rgba(255,255,255,0.08); backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.15); border-radius: 16px;
+      padding: 36px; max-width: 420px; width: 100%; text-align: center;
+    }
+    .landing-card label { display: block; text-align: left; margin-bottom: 6px; font-weight: 600; font-size: 0.95rem; color: #b0c4de; }
+    .landing-card input {
+      width: 100%; padding: 14px; font-size: 1.2rem; border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 10px; background: rgba(255,255,255,0.05); color: white;
+      text-align: center; letter-spacing: 4px; font-weight: 700; outline: none;
+      margin-bottom: 24px; text-transform: uppercase;
+    }
+    .landing-card input::placeholder { letter-spacing: 1px; font-weight: 400; color: #667; }
+    .landing-card input:focus { border-color: #4a9eda; }
+    .role-buttons { display: flex; gap: 12px; }
+    .role-btn {
+      flex: 1; padding: 18px; border: 2px solid rgba(255,255,255,0.2); border-radius: 12px;
+      background: rgba(255,255,255,0.05); color: white; cursor: pointer; transition: all 0.2s;
+      font-size: 1rem; font-weight: 600;
+    }
+    .role-btn:hover { transform: translateY(-2px); }
+    .role-btn.cashier:hover { background: #2563eb; border-color: #2563eb; }
+    .role-btn.kitchen:hover { background: #e94560; border-color: #e94560; }
+    .role-btn .icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .landing-error { color: #f87171; margin-top: 12px; font-size: 0.9rem; min-height: 20px; }
+
+    /* ===== SHARED ===== */
+    .page { display: none; min-height: 100vh; }
+    .page.active { display: block; }
+    .connection-status {
+      padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .connection-status .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .status-connected { background: rgba(16,185,129,0.15); color: #10b981; }
+    .status-connected .dot { background: #10b981; }
+    .status-waiting { background: rgba(251,191,36,0.15); color: #f59e0b; }
+    .status-waiting .dot { background: #f59e0b; }
+
+    /* ===== CASHIER PAGE ===== */
+    .cashier-page { background: #f0f2f5; }
+    .cashier-page .header {
+      background: #2563eb; color: white; padding: 14px 20px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+    }
+    .cashier-page .header h1 { font-size: 1.2rem; }
+    .cashier-page .header .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .cashier-page .header button {
+      background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+      color: white; padding: 7px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;
+    }
+    .cashier-page .header button:hover { background: rgba(255,255,255,0.3); }
+    .container { max-width: 800px; margin: 16px auto; padding: 0 14px; }
+
+    .name-section {
+      background: white; border-radius: 10px; padding: 16px; margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .name-section label { font-weight: 600; display: block; margin-bottom: 6px; }
+    .name-section input {
+      width: 100%; padding: 12px; font-size: 1.05rem; border: 2px solid #e5e7eb;
+      border-radius: 8px; outline: none;
+    }
+    .name-section input:focus { border-color: #2563eb; }
+
+    .section-title { font-size: 1rem; font-weight: 600; color: #666; margin-bottom: 10px; }
+
+    .menu-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px;
+      margin-bottom: 10px;
+    }
+    .menu-item {
+      background: white; border: 2px solid #e5e7eb; border-radius: 10px;
+      padding: 14px 10px; text-align: center; cursor: pointer; transition: all 0.15s;
+      position: relative;
+    }
+    .menu-item:hover { border-color: #2563eb; transform: translateY(-1px); }
+    .menu-item .name { font-weight: 600; font-size: 0.95rem; margin-bottom: 2px; }
+    .menu-item .price { color: #2563eb; font-weight: 700; }
+    .menu-item .del {
+      position: absolute; top: 2px; right: 6px; background: none; border: none;
+      color: #ccc; cursor: pointer; font-size: 1.1rem;
+    }
+    .menu-item .del:hover { color: #ef4444; }
+
+    .add-item-row {
+      display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .add-item-row input {
+      padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem;
+    }
+    .add-item-row input:first-child { flex: 1; min-width: 100px; }
+    .add-item-row input:nth-child(2) { width: 70px; }
+    .add-item-row button {
+      background: #10b981; color: white; border: none; padding: 8px 14px;
+      border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem;
+    }
+
+    .cart-section {
+      background: white; border-radius: 10px; padding: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 16px;
+    }
+    .cart-empty { color: #aaa; text-align: center; padding: 20px; font-style: italic; }
+    .cart-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-bottom: 1px solid #f3f4f6;
+    }
+    .cart-item:last-child { border-bottom: none; }
+    .cart-item .info { display: flex; align-items: center; gap: 8px; }
+    .qty-controls { display: flex; align-items: center; gap: 4px; }
+    .qty-controls button {
+      width: 26px; height: 26px; border-radius: 50%; border: 1px solid #ddd;
+      background: #f9fafb; cursor: pointer; font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .qty-controls button:hover { background: #e5e7eb; }
+    .qty { font-weight: 600; min-width: 18px; text-align: center; }
+    .item-total { font-weight: 600; color: #2563eb; }
+
+    .cart-total {
+      display: flex; justify-content: space-between; padding-top: 10px; margin-top: 8px;
+      border-top: 2px solid #e5e7eb; font-weight: 700; font-size: 1.1rem;
+    }
+
+    .send-btn {
+      width: 100%; padding: 14px; background: #2563eb; color: white; border: none;
+      border-radius: 10px; font-size: 1.1rem; font-weight: 700; cursor: pointer; margin-top: 8px;
+    }
+    .send-btn:hover { background: #1d4ed8; }
+    .send-btn:disabled { background: #93c5fd; cursor: not-allowed; }
+
+    /* ===== KITCHEN PAGE ===== */
+    .kitchen-page { background: #1a1a2e; color: #eee; }
+    .kitchen-page .header {
+      background: #16213e; padding: 14px 20px; border-bottom: 2px solid #0f3460;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+    }
+    .kitchen-page .header h1 { font-size: 1.2rem; color: #e94560; }
+    .kitchen-page .header .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .kitchen-page .header button {
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+      color: white; padding: 7px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;
+    }
+    .kitchen-page .header button:hover { background: rgba(255,255,255,0.2); }
+    .kitchen-page .stats { color: #aaa; font-size: 0.85rem; }
+
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; padding: 16px 16px 0; }
+    .filter-bar button {
+      padding: 7px 16px; border-radius: 20px; border: 1px solid #333;
+      background: #16213e; color: #ccc; cursor: pointer; font-size: 0.85rem;
+    }
+    .filter-bar button.active { background: #e94560; color: white; border-color: #e94560; }
+
+    .orders-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px; padding: 0 16px 16px;
+    }
+    .order-card {
+      background: #16213e; border-radius: 12px; border: 1px solid #0f3460; overflow: hidden;
+    }
+    .order-card.all-done { opacity: 0.5; }
+    .order-header {
+      background: #0f3460; padding: 12px 16px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .customer-name { font-weight: 700; font-size: 1.05rem; color: #e94560; }
+    .order-time { font-size: 0.8rem; color: #888; }
+    .order-id { font-size: 0.7rem; color: #555; }
+    .order-items-list { padding: 8px 16px; }
+    .order-item-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .order-item-row:last-child { border-bottom: none; }
+    .order-item-row.done .oitem-name { text-decoration: line-through; color: #555; }
+    .done-btn {
+      padding: 5px 14px; border-radius: 6px; border: none; cursor: pointer;
+      font-weight: 600; font-size: 0.8rem;
+    }
+    .done-btn.pending { background: #10b981; color: white; }
+    .done-btn.pending:hover { background: #059669; }
+    .done-btn.completed { background: #333; color: #555; cursor: default; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: #444; }
+    .empty-state h2 { color: #555; margin-bottom: 8px; }
+
+    @keyframes flash { 0%,100%{border-color:#0f3460} 50%{border-color:#e94560} }
+    .order-card.new { animation: flash 0.5s ease 3; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      padding: 12px 24px; border-radius: 10px; font-weight: 600; opacity: 0;
+      transition: opacity 0.3s; pointer-events: none; z-index: 100; color: white;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<!-- ===== LANDING PAGE ===== -->
+<div class="landing page active" id="landingPage">
+  <h1>Kermess POS</h1>
+  <p class="subtitle">Point of Sale System</p>
+  <div class="landing-card">
+    <label for="roomCode">Room Code</label>
+    <input type="text" id="roomCode" placeholder="e.g. KERMESS1" maxlength="20" autocomplete="off">
+    <label style="margin-top: 8px;">I am the...</label>
+    <div class="role-buttons">
+      <button class="role-btn cashier" onclick="joinRoom('cashier')">
+        <span class="icon">&#128179;</span>
+        Cashier
+      </button>
+      <button class="role-btn kitchen" onclick="joinRoom('kitchen')">
+        <span class="icon">&#127859;</span>
+        Kitchen
+      </button>
+    </div>
+    <div class="landing-error" id="landingError"></div>
+  </div>
+</div>
+
+<!-- ===== CASHIER PAGE ===== -->
+<div class="cashier-page page" id="cashierPage">
+  <div class="header">
+    <h1>Cashier</h1>
+    <div class="actions">
+      <span class="connection-status status-waiting" id="cashierStatus">
+        <span class="dot"></span> <span class="status-text">Waiting for kitchen...</span>
+      </span>
+      <button onclick="exportExcel()">Export Excel</button>
+      <button onclick="leavePage()">Leave</button>
+    </div>
+  </div>
+  <div class="container">
+    <div class="name-section">
+      <label for="customerName">Customer Name</label>
+      <input type="text" id="customerName" placeholder="Enter name..." autocomplete="off">
+    </div>
+    <div class="section-title">Menu</div>
+    <div class="menu-grid" id="menuGrid"></div>
+    <div class="add-item-row">
+      <input id="newItemName" placeholder="New item name...">
+      <input id="newItemPrice" type="number" step="0.01" min="0" placeholder="Price">
+      <button onclick="addMenuItem()">+ Add</button>
+    </div>
+    <div class="cart-section">
+      <div class="section-title">Current Order</div>
+      <div id="cartList"></div>
+      <div class="cart-total" id="cartTotal" style="display:none">
+        <span>Total</span><span id="totalAmount">$0.00</span>
+      </div>
+      <button class="send-btn" id="sendBtn" disabled onclick="sendOrder()">Send Order to Kitchen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== KITCHEN PAGE ===== -->
+<div class="kitchen-page page" id="kitchenPage">
+  <div class="header">
+    <h1>Kitchen Display</h1>
+    <div class="stats" id="kitchenStats"></div>
+    <div class="actions">
+      <span class="connection-status status-waiting" id="kitchenStatus">
+        <span class="dot"></span> <span class="status-text">Waiting for cashier...</span>
+      </span>
+      <button onclick="exportExcel()">Export Excel</button>
+      <button onclick="leavePage()">Leave</button>
+    </div>
+  </div>
+  <div class="filter-bar">
+    <button class="active" id="filter-active" onclick="setFilter('active')">Active</button>
+    <button id="filter-all" onclick="setFilter('all')">All Orders</button>
+  </div>
+  <div class="orders-grid" id="ordersGrid"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== STATE =====
+let role = null;        // 'cashier' | 'kitchen'
+let roomCode = '';
+let peer = null;
+let conn = null;        // PeerJS DataConnection
+let menu = [];
+let orders = [];        // [{ id, customer_name, created_at, items: [{ id, item_name, price, done }] }]
+let cart = [];           // [{ name, price, qty }]
+let orderIdCounter = 1;
+let itemIdCounter = 1;
+let filter = 'active';
+let connected = false;
+
+// ===== PERSISTENCE =====
+function saveState() {
+  const state = { menu, orders, orderIdCounter, itemIdCounter };
+  localStorage.setItem('kermess-pos-' + roomCode, JSON.stringify(state));
+}
+
+function loadState() {
+  const raw = localStorage.getItem('kermess-pos-' + roomCode);
+  if (raw) {
+    try {
+      const state = JSON.parse(raw);
+      menu = state.menu || getDefaultMenu();
+      orders = state.orders || [];
+      orderIdCounter = state.orderIdCounter || 1;
+      itemIdCounter = state.itemIdCounter || 1;
+    } catch { resetState(); }
+  } else {
+    resetState();
+  }
+}
+
+function resetState() {
+  menu = getDefaultMenu();
+  orders = [];
+  orderIdCounter = 1;
+  itemIdCounter = 1;
+}
+
+function getDefaultMenu() {
+  return [
+    { id: 1, name: 'Hotdog', price: 2.00 },
+    { id: 2, name: 'Burger', price: 3.50 },
+    { id: 3, name: 'Fries', price: 1.50 },
+    { id: 4, name: 'Soda', price: 1.00 },
+    { id: 5, name: 'Water', price: 0.50 },
+    { id: 6, name: 'Cake', price: 2.50 },
+    { id: 7, name: 'Coffee', price: 1.50 },
+    { id: 8, name: 'Popcorn', price: 2.00 },
+  ];
+}
+
+// ===== PEER COMMUNICATION =====
+function joinRoom(selectedRole) {
+  roomCode = document.getElementById('roomCode').value.trim().toUpperCase();
+  if (!roomCode) {
+    document.getElementById('landingError').textContent = 'Please enter a room code';
+    return;
+  }
+  role = selectedRole;
+  loadState();
+
+  // PeerJS IDs: cashier is "kermess-<code>-cashier", kitchen is "kermess-<code>-kitchen"
+  const myId = 'kermess-' + roomCode + '-' + role;
+  const otherId = 'kermess-' + roomCode + '-' + (role === 'cashier' ? 'kitchen' : 'cashier');
+
+  peer = new Peer(myId);
+
+  peer.on('open', () => {
+    // Show page
+    document.getElementById('landingPage').classList.remove('active');
+    document.getElementById(role === 'cashier' ? 'cashierPage' : 'kitchenPage').classList.add('active');
+    render();
+
+    // Try to connect to the other device
+    tryConnect(otherId);
+  });
+
+  peer.on('connection', (c) => {
+    setupConnection(c);
+  });
+
+  peer.on('error', (err) => {
+    if (err.type === 'unavailable-id') {
+      document.getElementById('landingError').textContent = 'This role is already taken in this room. Try the other role.';
+      if (peer) peer.destroy();
+    } else if (err.type === 'peer-unavailable') {
+      // Other peer not online yet, keep waiting
+      updateConnectionStatus(false);
+      setTimeout(() => tryConnect(otherId), 3000);
+    } else {
+      console.error('Peer error:', err);
+    }
+  });
+}
+
+function tryConnect(otherId) {
+  if (connected) return;
+  const c = peer.connect(otherId, { reliable: true });
+  c.on('open', () => setupConnection(c));
+  c.on('error', () => {
+    setTimeout(() => tryConnect(otherId), 3000);
+  });
+}
+
+function setupConnection(c) {
+  if (conn) conn.close();
+  conn = c;
+  connected = true;
+  updateConnectionStatus(true);
+
+  // Sync: send full state to the other side
+  sendMsg({ type: 'sync', menu, orders, orderIdCounter, itemIdCounter });
+
+  conn.on('data', (msg) => handleMessage(msg));
+  conn.on('close', () => {
+    connected = false;
+    updateConnectionStatus(false);
+    // Try to reconnect
+    const otherId = 'kermess-' + roomCode + '-' + (role === 'cashier' ? 'kitchen' : 'cashier');
+    setTimeout(() => tryConnect(otherId), 2000);
+  });
+}
+
+function sendMsg(msg) {
+  if (conn && conn.open) {
+    conn.send(msg);
+  }
+}
+
+function handleMessage(msg) {
+  switch (msg.type) {
+    case 'sync':
+      // Merge: take the data with more orders (simple conflict resolution)
+      if (msg.orders.length >= orders.length) {
+        orders = msg.orders;
+        orderIdCounter = Math.max(orderIdCounter, msg.orderIdCounter);
+        itemIdCounter = Math.max(itemIdCounter, msg.itemIdCounter);
+      }
+      if (msg.menu.length > 0) {
+        menu = msg.menu;
+      }
+      saveState();
+      render();
+      break;
+    case 'new-order':
+      orders.unshift(msg.order);
+      orderIdCounter = Math.max(orderIdCounter, msg.order.id + 1);
+      for (const item of msg.order.items) {
+        itemIdCounter = Math.max(itemIdCounter, item.id + 1);
+      }
+      saveState();
+      render();
+      if (role === 'kitchen') {
+        playBeep();
+        setTimeout(() => {
+          const card = document.querySelector(`[data-order-id="${msg.order.id}"]`);
+          if (card) card.classList.add('new');
+        }, 50);
+      }
+      break;
+    case 'item-done':
+      for (const order of orders) {
+        for (const item of order.items) {
+          if (item.id === msg.itemId) item.done = true;
+        }
+      }
+      saveState();
+      render();
+      break;
+    case 'menu-add':
+      menu.push(msg.item);
+      saveState();
+      render();
+      break;
+    case 'menu-delete':
+      menu = menu.filter(m => m.id !== msg.id);
+      saveState();
+      render();
+      break;
+  }
+}
+
+function updateConnectionStatus(isConnected) {
+  const statusId = role === 'cashier' ? 'cashierStatus' : 'kitchenStatus';
+  const el = document.getElementById(statusId);
+  const otherRole = role === 'cashier' ? 'kitchen' : 'cashier';
+  if (isConnected) {
+    el.className = 'connection-status status-connected';
+    el.querySelector('.status-text').textContent = otherRole.charAt(0).toUpperCase() + otherRole.slice(1) + ' connected';
+  } else {
+    el.className = 'connection-status status-waiting';
+    el.querySelector('.status-text').textContent = 'Waiting for ' + otherRole + '...';
+  }
+}
+
+// ===== CASHIER FUNCTIONS =====
+function renderMenu() {
+  const grid = document.getElementById('menuGrid');
+  grid.innerHTML = menu.map(item => `
+    <div class="menu-item" onclick="addToCart('${esc(item.name)}', ${item.price})">
+      <button class="del" onclick="event.stopPropagation(); deleteMenuItem(${item.id})" title="Remove">&times;</button>
+      <div class="name">${escHtml(item.name)}</div>
+      <div class="price">$${item.price.toFixed(2)}</div>
+    </div>
+  `).join('');
+}
+
+function addMenuItem() {
+  const name = document.getElementById('newItemName').value.trim();
+  const price = parseFloat(document.getElementById('newItemPrice').value);
+  if (!name || isNaN(price) || price < 0) return;
+  const id = Date.now();
+  const item = { id, name, price };
+  menu.push(item);
+  saveState();
+  renderMenu();
+  sendMsg({ type: 'menu-add', item });
+  document.getElementById('newItemName').value = '';
+  document.getElementById('newItemPrice').value = '';
+}
+
+function deleteMenuItem(id) {
+  if (!confirm('Remove this item from the menu?')) return;
+  menu = menu.filter(m => m.id !== id);
+  saveState();
+  renderMenu();
+  sendMsg({ type: 'menu-delete', id });
+}
+
+function addToCart(name, price) {
+  const existing = cart.find(c => c.name === name);
+  if (existing) existing.qty++;
+  else cart.push({ name, price, qty: 1 });
+  renderCart();
+}
+
+function changeQty(name, delta) {
+  const item = cart.find(c => c.name === name);
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) cart = cart.filter(c => c.name !== name);
+  renderCart();
+}
+
+function renderCart() {
+  const list = document.getElementById('cartList');
+  const totalDiv = document.getElementById('cartTotal');
+  const sendBtn = document.getElementById('sendBtn');
+  if (cart.length === 0) {
+    list.innerHTML = '<div class="cart-empty">Tap menu items to add them</div>';
+    totalDiv.style.display = 'none';
+    sendBtn.disabled = true;
+    return;
+  }
+  list.innerHTML = cart.map(item => `
+    <div class="cart-item">
+      <div class="info">
+        <div class="qty-controls">
+          <button onclick="changeQty('${esc(item.name)}', -1)">&minus;</button>
+          <span class="qty">${item.qty}</span>
+          <button onclick="changeQty('${esc(item.name)}', 1)">+</button>
+        </div>
+        <span>${escHtml(item.name)}</span>
+      </div>
+      <span class="item-total">$${(item.price * item.qty).toFixed(2)}</span>
+    </div>
+  `).join('');
+  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  document.getElementById('totalAmount').textContent = '$' + total.toFixed(2);
+  totalDiv.style.display = 'flex';
+  sendBtn.disabled = false;
+}
+
+function sendOrder() {
+  const name = document.getElementById('customerName').value.trim();
+  if (!name) {
+    document.getElementById('customerName').focus();
+    showToast('Please enter a customer name', '#ef4444');
+    return;
+  }
+  if (cart.length === 0) return;
+
+  const orderId = orderIdCounter++;
+  const items = [];
+  for (const c of cart) {
+    for (let i = 0; i < c.qty; i++) {
+      items.push({ id: itemIdCounter++, item_name: c.name, price: c.price, done: false });
+    }
+  }
+
+  const order = {
+    id: orderId,
+    customer_name: name,
+    created_at: new Date().toISOString(),
+    items,
+  };
+
+  orders.unshift(order);
+  saveState();
+  sendMsg({ type: 'new-order', order });
+
+  cart = [];
+  document.getElementById('customerName').value = '';
+  renderCart();
+  showToast('Order sent!');
+}
+
+// ===== KITCHEN FUNCTIONS =====
+function setFilter(f) {
+  filter = f;
+  document.querySelectorAll('.filter-bar button').forEach(b => b.classList.remove('active'));
+  document.getElementById('filter-' + f).classList.add('active');
+  renderKitchen();
+}
+
+function markDone(itemId) {
+  for (const order of orders) {
+    for (const item of order.items) {
+      if (item.id === itemId) item.done = true;
+    }
+  }
+  saveState();
+  sendMsg({ type: 'item-done', itemId });
+  renderKitchen();
+}
+
+function renderKitchen() {
+  const grid = document.getElementById('ordersGrid');
+  const stats = document.getElementById('kitchenStats');
+  const totalPending = orders.reduce((s, o) => s + o.items.filter(i => !i.done).length, 0);
+  stats.textContent = totalPending + ' pending items';
+
+  let filtered = orders;
+  if (filter === 'active') {
+    filtered = orders.filter(o => o.items.some(i => !i.done));
+  }
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="empty-state"><h2>${filter === 'active' ? 'No active orders' : 'No orders yet'}</h2><p>Orders appear here when placed</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(order => {
+    const allDone = order.items.every(i => i.done);
+    const time = new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `
+      <div class="order-card ${allDone ? 'all-done' : ''}" data-order-id="${order.id}">
+        <div class="order-header">
+          <div><div class="customer-name">${escHtml(order.customer_name)}</div><div class="order-id">#${order.id}</div></div>
+          <div class="order-time">${time}</div>
+        </div>
+        <div class="order-items-list">
+          ${order.items.map(item => `
+            <div class="order-item-row ${item.done ? 'done' : ''}">
+              <span class="oitem-name">${escHtml(item.item_name)}</span>
+              <button class="done-btn ${item.done ? 'completed' : 'pending'}"
+                ${item.done ? 'disabled' : `onclick="markDone(${item.id})"`}>
+                ${item.done ? 'Done' : 'Mark Done'}
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ===== EXCEL EXPORT =====
+function exportExcel() {
+  const salesMap = {};
+  for (const order of orders) {
+    for (const item of order.items) {
+      if (!salesMap[item.item_name]) {
+        salesMap[item.item_name] = { item: item.item_name, quantity: 0, total: 0 };
+      }
+      salesMap[item.item_name].quantity++;
+      salesMap[item.item_name].total += item.price;
+    }
+  }
+
+  const rows = Object.values(salesMap).sort((a, b) => b.quantity - a.quantity);
+  const totalQty = rows.reduce((s, r) => s + r.quantity, 0);
+  const totalRev = rows.reduce((s, r) => s + r.total, 0);
+  rows.push({ item: 'TOTAL', quantity: totalQty, total: totalRev });
+
+  const wsData = [['Item', 'Quantity Sold', 'Total Revenue'], ...rows.map(r => [r.item, r.quantity, '$' + r.total.toFixed(2)])];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 15 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Sales Report');
+  XLSX.writeFile(wb, 'kermess-sales-report.xlsx');
+  showToast('Excel exported!');
+}
+
+// ===== SHARED =====
+function render() {
+  if (role === 'cashier') { renderMenu(); renderCart(); }
+  else if (role === 'kitchen') { renderKitchen(); }
+}
+
+function leavePage() {
+  if (peer) peer.destroy();
+  connected = false;
+  conn = null;
+  peer = null;
+  role = null;
+  cart = [];
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('landingPage').classList.add('active');
+}
+
+function showToast(msg, color = '#10b981') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = color;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 800; gain.gain.value = 0.3;
+    osc.start(); osc.stop(ctx.currentTime + 0.2);
+  } catch {}
+}
+
+function esc(str) { return str.replace(/'/g, "\\'"); }
+function escHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// Auto-reconnect loop
+setInterval(() => {
+  if (peer && !connected && roomCode) {
+    const otherId = 'kermess-' + roomCode + '-' + (role === 'cashier' ? 'kitchen' : 'cashier');
+    tryConnect(otherId);
+  }
+}, 5000);
+</script>
+</body>
+</html>
