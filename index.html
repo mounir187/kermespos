@@ -29,8 +29,7 @@
     .role-cards { display: flex; gap: 20px; max-width: 560px; width: 100%; }
     .role-card {
       flex: 1; padding: 32px 24px; border-radius: 16px; cursor: pointer;
-      transition: all 0.25s ease; text-align: center; border: 1px solid #1a1a2e;
-      background: #111118;
+      transition: all 0.25s ease; text-align: center; border: 1px solid #1a1a2e; background: #111118;
     }
     .role-card:hover { transform: translateY(-4px); }
     .role-card.cashier-card:hover { border-color: #6366f1; box-shadow: 0 8px 40px rgba(99,102,241,0.2); }
@@ -59,12 +58,26 @@
     .conn-badge.off { background: rgba(250,204,21,0.1); color: #facc15; }
     .conn-badge.off .dot { background: #facc15; }
 
-    /* ===== CASHIER PAGE ===== */
+    /* ===== CASHIER PAGE (LIGHT) ===== */
     .cashier-page {
-      background: #f5f5f7; color: #1a1a1a; flex-direction: column;
+      --bg: #f5f5f7; --card: #fff; --border: #e5e5e5; --border-light: #eee;
+      --text: #1a1a1a; --text-dim: #999; --text-mid: #555; --text-comment: #777;
+      --input-bg: #fafafa; --topbar-bg: #fff; --accent: #6366f1; --accent-hover: #4f46e5;
+      --cart-bg: #fff; --footer-bg: #fafafa; --menu-hover-shadow: rgba(99,102,241,0.1);
+      --del-bg: #fef2f2; --del-color: #ef4444;
+      background: var(--bg); color: var(--text); flex-direction: column;
     }
+    /* ===== CASHIER DARK MODE ===== */
+    .cashier-page.dark {
+      --bg: #0f0f13; --card: #18181b; --border: #27272a; --border-light: #222;
+      --text: #e5e5e5; --text-dim: #666; --text-mid: #aaa; --text-comment: #888;
+      --input-bg: #1e1e24; --topbar-bg: #18181b; --accent: #818cf8; --accent-hover: #6366f1;
+      --cart-bg: #18181b; --footer-bg: #1e1e24; --menu-hover-shadow: rgba(129,140,248,0.1);
+      --del-bg: rgba(239,68,68,0.1); --del-color: #ef4444;
+    }
+
     .cashier-topbar {
-      background: #fff; border-bottom: 1px solid #e5e5e5; padding: 12px 20px;
+      background: var(--topbar-bg); border-bottom: 1px solid var(--border); padding: 12px 20px;
       display: flex; justify-content: space-between; align-items: center;
       position: sticky; top: 0; z-index: 50;
     }
@@ -75,115 +88,123 @@
       display: flex; align-items: center; justify-content: center;
       font-weight: 900; font-size: 0.85rem; color: #fff;
     }
-    .cashier-topbar .brand-name { font-weight: 800; font-size: 1rem; color: #1a1a1a; }
-    .cashier-topbar .brand-role { font-size: 0.75rem; color: #999; font-weight: 500; }
-    .topbar-actions { display: flex; gap: 8px; align-items: center; }
+    .cashier-topbar .brand-name { font-weight: 800; font-size: 1rem; color: var(--text); }
+    .cashier-topbar .brand-role { font-size: 0.75rem; color: var(--text-dim); font-weight: 500; }
+    .topbar-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     .topbar-btn {
-      padding: 7px 14px; border-radius: 8px; border: 1px solid #e5e5e5;
-      background: #fff; color: #555; cursor: pointer; font-size: 0.8rem;
-      font-weight: 600; transition: all 0.15s;
+      padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text-mid); cursor: pointer; font-size: 0.8rem;
+      font-weight: 600; transition: all 0.15s; font-family: inherit;
     }
-    .topbar-btn:hover { background: #f5f5f7; border-color: #ccc; }
-    .topbar-btn.primary { background: #6366f1; color: #fff; border-color: #6366f1; }
-    .topbar-btn.primary:hover { background: #4f46e5; }
+    .topbar-btn:hover { border-color: var(--text-dim); }
+    .dark-toggle { position: relative; width: 44px; height: 24px; border-radius: 12px; border: none;
+      background: #e5e7eb; cursor: pointer; transition: background 0.2s; padding: 0; }
+    .dark-toggle::after {
+      content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
+      border-radius: 50%; background: #fff; transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .cashier-page.dark .dark-toggle { background: #6366f1; }
+    .cashier-page.dark .dark-toggle::after { transform: translateX(20px); }
 
-    .cashier-body {
-      display: flex; flex: 1; overflow: hidden;
-    }
+    .cashier-body { display: flex; flex: 1; overflow: hidden; }
 
     /* Left: Menu */
-    .menu-panel {
-      flex: 1; padding: 20px; overflow-y: auto; max-height: calc(100vh - 57px);
-    }
-    .menu-panel .panel-title {
-      font-size: 0.8rem; font-weight: 700; color: #999; text-transform: uppercase;
+    .menu-panel { flex: 1; padding: 20px; overflow-y: auto; max-height: calc(100vh - 57px); }
+    .panel-title {
+      font-size: 0.8rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase;
       letter-spacing: 1px; margin-bottom: 14px;
     }
+    /* Category Tabs */
+    .cat-tabs {
+      display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap;
+    }
+    .cat-tab {
+      padding: 7px 16px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text-mid); cursor: pointer;
+      font-size: 0.8rem; font-weight: 600; transition: all 0.15s; font-family: inherit;
+    }
+    .cat-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .cat-tab:hover:not(.active) { border-color: var(--text-dim); }
+
     .menu-grid {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 10px;
       margin-bottom: 16px;
     }
     .menu-item {
-      background: #fff; border: 1.5px solid #eee; border-radius: 12px;
+      background: var(--card); border: 1.5px solid var(--border-light); border-radius: 12px;
       padding: 18px 12px; text-align: center; cursor: pointer;
       transition: all 0.15s; position: relative;
     }
-    .menu-item:hover { border-color: #6366f1; box-shadow: 0 2px 12px rgba(99,102,241,0.1); transform: translateY(-1px); }
+    .menu-item:hover { border-color: var(--accent); box-shadow: 0 2px 12px var(--menu-hover-shadow); transform: translateY(-1px); }
     .menu-item:active { transform: scale(0.97); }
-    .menu-item .m-name { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; color: #1a1a1a; }
-    .menu-item .m-price { color: #6366f1; font-weight: 800; font-size: 1rem; }
+    .menu-item .m-name { font-weight: 700; font-size: 0.9rem; margin-bottom: 2px; color: var(--text); }
+    .menu-item .m-cat { font-size: 0.7rem; color: var(--text-dim); margin-bottom: 4px; }
+    .menu-item .m-price { color: var(--accent); font-weight: 800; font-size: 1rem; }
     .menu-item .m-del {
       position: absolute; top: 4px; right: 8px; background: none; border: none;
-      color: #ccc; cursor: pointer; font-size: 1rem; width: 22px; height: 22px;
+      color: var(--text-dim); cursor: pointer; font-size: 1rem; width: 22px; height: 22px;
       display: flex; align-items: center; justify-content: center; border-radius: 50%;
     }
-    .menu-item .m-del:hover { color: #ef4444; background: #fef2f2; }
-    .add-item-bar {
-      display: flex; gap: 8px; flex-wrap: wrap;
-    }
-    .add-item-bar input {
-      padding: 9px 12px; border: 1.5px solid #e5e5e5; border-radius: 8px;
+    .menu-item .m-del:hover { color: var(--del-color); background: var(--del-bg); }
+    .add-item-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+    .add-item-bar input, .add-item-bar select {
+      padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px;
       font-size: 0.85rem; outline: none; font-family: inherit;
+      background: var(--card); color: var(--text);
     }
-    .add-item-bar input:focus { border-color: #6366f1; }
-    .add-item-bar input:first-child { flex: 1; min-width: 100px; }
-    .add-item-bar input:nth-child(2) { width: 80px; }
+    .add-item-bar input:focus, .add-item-bar select:focus { border-color: var(--accent); }
+    .add-item-bar input:first-child { flex: 1; min-width: 90px; }
+    .add-item-bar input:nth-child(2) { width: 70px; }
+    .add-item-bar select { width: 110px; }
     .add-item-bar button {
-      background: #6366f1; color: #fff; border: none; padding: 9px 16px;
-      border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.85rem;
-      font-family: inherit;
+      background: var(--accent); color: #fff; border: none; padding: 9px 16px;
+      border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.85rem; font-family: inherit;
     }
-    .add-item-bar button:hover { background: #4f46e5; }
+    .add-item-bar button:hover { background: var(--accent-hover); }
 
     /* Right: Cart */
     .cart-panel {
-      width: 360px; min-width: 320px; background: #fff; border-left: 1px solid #e5e5e5;
+      width: 380px; min-width: 340px; background: var(--cart-bg); border-left: 1px solid var(--border);
       display: flex; flex-direction: column; max-height: calc(100vh - 57px);
     }
-    .cart-header {
-      padding: 16px 20px; border-bottom: 1px solid #f0f0f0;
-    }
-    .cart-header .panel-title {
-      font-size: 0.8rem; font-weight: 700; color: #999; text-transform: uppercase;
-      letter-spacing: 1px; margin-bottom: 10px;
-    }
+    .cart-header { padding: 16px 20px; border-bottom: 1px solid var(--border-light); }
     .customer-input {
-      width: 100%; padding: 10px 14px; border: 1.5px solid #e5e5e5; border-radius: 10px;
+      width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 10px;
       font-size: 0.95rem; outline: none; font-family: inherit; font-weight: 500;
+      background: var(--input-bg); color: var(--text);
     }
-    .customer-input:focus { border-color: #6366f1; }
+    .customer-input:focus { border-color: var(--accent); }
     .cart-items { flex: 1; overflow-y: auto; padding: 8px 20px; }
-    .cart-empty { color: #bbb; text-align: center; padding: 40px 10px; font-size: 0.9rem; }
-    .cart-item { padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
+    .cart-empty { color: var(--text-dim); text-align: center; padding: 40px 10px; font-size: 0.9rem; }
+    .cart-item { padding: 12px 0; border-bottom: 1px solid var(--border-light); }
     .cart-item:last-child { border-bottom: none; }
     .cart-item-top { display: flex; justify-content: space-between; align-items: center; }
     .cart-item .info { display: flex; align-items: center; gap: 8px; }
     .qty-controls { display: flex; align-items: center; gap: 4px; }
     .qty-controls button {
-      width: 28px; height: 28px; border-radius: 8px; border: 1.5px solid #e5e5e5;
-      background: #fafafa; cursor: pointer; font-size: 1rem; color: #555;
+      width: 28px; height: 28px; border-radius: 8px; border: 1.5px solid var(--border);
+      background: var(--input-bg); cursor: pointer; font-size: 1rem; color: var(--text-mid);
       display: flex; align-items: center; justify-content: center; font-family: inherit;
     }
-    .qty-controls button:hover { background: #f0f0f0; border-color: #ccc; }
+    .qty-controls button:hover { border-color: var(--text-dim); }
     .qty { font-weight: 700; min-width: 20px; text-align: center; font-size: 0.95rem; }
     .cart-item-name { font-weight: 600; font-size: 0.9rem; }
-    .item-total { font-weight: 700; color: #6366f1; font-size: 0.95rem; }
+    .item-total { font-weight: 700; color: var(--accent); font-size: 0.95rem; }
     .comment-input {
-      width: 100%; padding: 7px 10px; margin-top: 8px; border: 1px solid #eee;
-      border-radius: 8px; font-size: 0.8rem; outline: none; color: #777;
-      font-family: inherit; background: #fafafa;
+      width: 100%; padding: 7px 10px; margin-top: 8px; border: 1px solid var(--border-light);
+      border-radius: 8px; font-size: 0.8rem; outline: none; color: var(--text-comment);
+      font-family: inherit; background: var(--input-bg);
     }
-    .comment-input:focus { border-color: #6366f1; background: #fff; }
-    .comment-input::placeholder { color: #ccc; }
+    .comment-input:focus { border-color: var(--accent); }
+    .comment-input::placeholder { color: var(--text-dim); }
 
-    .cart-footer {
-      padding: 16px 20px; border-top: 1px solid #f0f0f0; background: #fafafa;
-    }
+    .cart-footer { padding: 16px 20px; border-top: 1px solid var(--border-light); background: var(--footer-bg); }
     .cart-total-row {
       display: flex; justify-content: space-between; margin-bottom: 12px;
       font-weight: 800; font-size: 1.15rem;
     }
-    .cart-total-amount { color: #6366f1; }
+    .cart-total-amount { color: var(--accent); }
     .send-btn {
       width: 100%; padding: 14px; background: linear-gradient(135deg, #6366f1, #8b5cf6);
       color: #fff; border: none; border-radius: 12px; font-size: 1rem;
@@ -195,57 +216,61 @@
     .send-btn:disabled { background: #d4d4d8; box-shadow: none; cursor: not-allowed; transform: none; }
 
     /* Change Calculator */
-    .change-calc {
-      margin-top: 14px; padding-top: 14px; border-top: 1px solid #e5e5e5;
-    }
+    .change-calc { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
     .change-calc .calc-title {
-      font-size: 0.75rem; font-weight: 700; color: #999; text-transform: uppercase;
+      font-size: 0.75rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase;
       letter-spacing: 1px; margin-bottom: 10px;
     }
     .currency-tabs {
-      display: flex; gap: 4px; margin-bottom: 10px; background: #f0f0f0;
+      display: flex; gap: 4px; margin-bottom: 10px; background: var(--input-bg);
       border-radius: 8px; padding: 3px;
     }
     .currency-tab {
       flex: 1; padding: 6px; border: none; border-radius: 6px; cursor: pointer;
       font-size: 0.8rem; font-weight: 700; font-family: inherit;
-      background: transparent; color: #888; transition: all 0.15s;
+      background: transparent; color: var(--text-dim); transition: all 0.15s;
     }
-    .currency-tab.active { background: #fff; color: #1a1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .currency-tab.active { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .calc-display {
-      background: #fff; border: 1.5px solid #e5e5e5; border-radius: 10px;
+      background: var(--card); border: 1.5px solid var(--border); border-radius: 10px;
       padding: 12px 16px; margin-bottom: 10px; text-align: right;
-      font-size: 1.6rem; font-weight: 800; color: #1a1a1a; min-height: 52px;
+      font-size: 1.6rem; font-weight: 800; color: var(--text); min-height: 52px;
       display: flex; align-items: center; justify-content: space-between;
     }
-    .calc-display .calc-label { font-size: 0.75rem; font-weight: 600; color: #999; }
-    .numpad {
+    .calc-display .calc-label { font-size: 0.75rem; font-weight: 600; color: var(--text-dim); }
+
+    /* Quick Cash Buttons */
+    .quick-cash {
       display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px;
     }
-    .numpad button {
-      padding: 14px; border: 1.5px solid #e5e5e5; border-radius: 10px;
-      background: #fff; font-size: 1.15rem; font-weight: 700; cursor: pointer;
-      font-family: inherit; color: #1a1a1a; transition: all 0.1s;
+    .quick-cash button {
+      padding: 12px 6px; border: 1.5px solid var(--border); border-radius: 10px;
+      background: var(--card); font-size: 0.95rem; font-weight: 700; cursor: pointer;
+      font-family: inherit; color: var(--text); transition: all 0.1s;
       -webkit-tap-highlight-color: transparent; user-select: none;
     }
-    .numpad button:hover { background: #f5f5f7; }
-    .numpad button:active { background: #e5e7eb; transform: scale(0.96); }
-    .numpad .num-clear {
-      background: #fef2f2; color: #ef4444; border-color: #fecaca;
+    .quick-cash button:hover { border-color: var(--accent); background: var(--input-bg); }
+    .quick-cash button:active { transform: scale(0.96); }
+    .quick-cash .exact-btn {
+      background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.3); color: #22c55e;
     }
-    .numpad .num-clear:hover { background: #fee2e2; }
-    .numpad .num-back {
-      background: #f5f5f7; color: #666; border-color: #e5e5e5;
+    .quick-cash .exact-btn:hover { background: rgba(34,197,94,0.15); }
+    .quick-cash .clear-btn {
+      background: var(--del-bg); border-color: rgba(239,68,68,0.3); color: var(--del-color);
     }
-    .numpad .num-dot { font-size: 1.4rem; }
+    .quick-cash .clear-btn:hover { background: rgba(239,68,68,0.15); }
+
     .change-result {
       padding: 12px 14px; border-radius: 10px; text-align: center;
       font-weight: 800; font-size: 1.05rem;
     }
-    .change-result.positive { background: #f0fdf4; color: #16a34a; }
-    .change-result.negative { background: #fef2f2; color: #ef4444; }
-    .change-result.zero { background: #f5f5f5; color: #999; }
-    .change-result .change-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7; display: block; margin-bottom: 2px; }
+    .change-result.positive { background: rgba(34,197,94,0.08); color: #22c55e; }
+    .change-result.negative { background: rgba(239,68,68,0.08); color: #ef4444; }
+    .change-result.zero { background: var(--input-bg); color: var(--text-dim); }
+    .change-result .change-label {
+      font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.5px; opacity: 0.7; display: block; margin-bottom: 2px;
+    }
 
     /* ===== KITCHEN PAGE ===== */
     .kitchen-page { background: #0f0f13; color: #eee; flex-direction: column; }
@@ -274,17 +299,13 @@
       font-weight: 600; transition: all 0.15s; font-family: inherit;
     }
     .kitchen-btn:hover { background: #27272a; color: #fff; }
-
-    .filter-bar {
-      display: flex; gap: 6px; padding: 16px 20px 0;
-    }
+    .filter-bar { display: flex; gap: 6px; padding: 16px 20px 0; }
     .filter-btn {
       padding: 7px 18px; border-radius: 8px; border: 1px solid #27272a;
       background: transparent; color: #666; cursor: pointer; font-size: 0.8rem;
       font-weight: 600; transition: all 0.15s; font-family: inherit;
     }
     .filter-btn.active { background: #f97316; color: #fff; border-color: #f97316; }
-
     .orders-grid {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: 14px; padding: 16px 20px;
@@ -331,11 +352,9 @@
     .done-btn.pending { background: #22c55e; color: #fff; }
     .done-btn.pending:hover { background: #16a34a; }
     .done-btn.completed { background: #27272a; color: #444; cursor: default; }
-
     .empty-state { text-align: center; padding: 80px 20px; color: #444; grid-column: 1 / -1; }
     .empty-state h2 { color: #555; margin-bottom: 8px; font-size: 1.2rem; }
     .empty-state p { font-size: 0.85rem; }
-
     @keyframes flash { 0%,100%{border-color:#27272a} 50%{border-color:#f97316} }
     .order-card.new { animation: flash 0.5s ease 3; }
 
@@ -348,18 +367,18 @@
     }
     .toast.show { opacity: 1; }
 
-    /* Mobile responsive */
+    /* Mobile */
     @media (max-width: 768px) {
       .role-cards { flex-direction: column; }
       .cashier-body { flex-direction: column; }
-      .cart-panel { width: 100%; min-width: 0; border-left: none; border-top: 1px solid #e5e5e5; max-height: none; }
+      .cart-panel { width: 100%; min-width: 0; border-left: none; border-top: 1px solid var(--border); max-height: none; }
       .menu-panel { max-height: none; }
     }
   </style>
 </head>
 <body>
 
-<!-- ===== LANDING PAGE ===== -->
+<!-- ===== LANDING ===== -->
 <div class="landing page active" id="landingPage">
   <div class="landing-logo">K</div>
   <h1><span>Kermess</span> POS</h1>
@@ -378,7 +397,7 @@
   </div>
 </div>
 
-<!-- ===== CASHIER PAGE ===== -->
+<!-- ===== CASHIER ===== -->
 <div class="cashier-page page" id="cashierPage">
   <div class="cashier-topbar">
     <div class="brand">
@@ -392,6 +411,7 @@
       <span class="conn-badge off" id="cashierStatus">
         <span class="dot"></span> <span class="status-text">Waiting...</span>
       </span>
+      <button class="dark-toggle" id="darkToggle" onclick="toggleDark()" title="Toggle dark mode"></button>
       <button class="topbar-btn" onclick="exportExcel()">Export Excel</button>
       <button class="topbar-btn" onclick="leavePage()">Leave</button>
     </div>
@@ -399,10 +419,17 @@
   <div class="cashier-body">
     <div class="menu-panel">
       <div class="panel-title">Menu Items</div>
+      <div class="cat-tabs" id="catTabs"></div>
       <div class="menu-grid" id="menuGrid"></div>
       <div class="add-item-bar">
         <input id="newItemName" placeholder="Item name...">
         <input id="newItemPrice" type="number" step="0.01" min="0" placeholder="Price">
+        <select id="newItemCat">
+          <option value="Food">Food</option>
+          <option value="Drinks">Drinks</option>
+          <option value="Desserts">Desserts</option>
+          <option value="Other">Other</option>
+        </select>
         <button onclick="addMenuItem()">+ Add</button>
       </div>
     </div>
@@ -428,24 +455,10 @@
             <span class="calc-label" id="receivedLabel">Received $</span>
             <span id="receivedDisplay">0</span>
           </div>
-          <div class="numpad">
-            <button onclick="numPress('1')">1</button>
-            <button onclick="numPress('2')">2</button>
-            <button onclick="numPress('3')">3</button>
-            <button onclick="numPress('4')">4</button>
-            <button onclick="numPress('5')">5</button>
-            <button onclick="numPress('6')">6</button>
-            <button onclick="numPress('7')">7</button>
-            <button onclick="numPress('8')">8</button>
-            <button onclick="numPress('9')">9</button>
-            <button class="num-dot" onclick="numPress('.')">.</button>
-            <button onclick="numPress('0')">0</button>
-            <button class="num-back" onclick="numBack()">&#9003;</button>
-          </div>
-          <button class="num-clear-btn" onclick="numClear()" style="width:100%;padding:8px;border:1.5px solid #fecaca;border-radius:8px;background:#fef2f2;color:#ef4444;font-weight:700;font-size:0.85rem;cursor:pointer;font-family:inherit;margin-bottom:10px;">Clear</button>
+          <div class="quick-cash" id="quickCash"></div>
           <div class="change-result zero" id="changeResult">
             <span class="change-label">Change</span>
-            <span id="changeAmount">Enter amount received</span>
+            <span id="changeAmount">Tap an amount above</span>
           </div>
         </div>
       </div>
@@ -453,7 +466,7 @@
   </div>
 </div>
 
-<!-- ===== KITCHEN PAGE ===== -->
+<!-- ===== KITCHEN ===== -->
 <div class="kitchen-page page" id="kitchenPage">
   <div class="kitchen-topbar">
     <div class="brand">
@@ -483,16 +496,12 @@
 
 <script>
 const ROOM = 'KERMESS-MAIN';
-let role = null;
-let peer = null;
-let conn = null;
-let menu = [];
-let orders = [];
-let cart = [];
-let orderIdCounter = 1;
-let itemIdCounter = 1;
-let filter = 'active';
-let connected = false;
+let role = null, peer = null, conn = null;
+let menu = [], orders = [], cart = [];
+let orderIdCounter = 1, itemIdCounter = 1;
+let filter = 'active', connected = false;
+let selectedCat = 'All';
+let darkMode = localStorage.getItem('kermess-dark') === 'true';
 
 // ===== PERSISTENCE =====
 function saveState() {
@@ -510,29 +519,35 @@ function loadState() {
     } catch { resetState(); }
   } else { resetState(); }
 }
-function resetState() {
-  menu = getDefaultMenu();
-  orders = [];
-  orderIdCounter = 1;
-  itemIdCounter = 1;
-}
+function resetState() { menu = getDefaultMenu(); orders = []; orderIdCounter = 1; itemIdCounter = 1; }
 function getDefaultMenu() {
   return [
-    { id: 1, name: 'Hotdog', price: 2.00 },
-    { id: 2, name: 'Burger', price: 3.50 },
-    { id: 3, name: 'Fries', price: 1.50 },
-    { id: 4, name: 'Soda', price: 1.00 },
-    { id: 5, name: 'Water', price: 0.50 },
-    { id: 6, name: 'Cake', price: 2.50 },
-    { id: 7, name: 'Coffee', price: 1.50 },
-    { id: 8, name: 'Popcorn', price: 2.00 },
+    { id: 1, name: 'Hotdog', price: 2.00, category: 'Food' },
+    { id: 2, name: 'Burger', price: 3.50, category: 'Food' },
+    { id: 3, name: 'Fries', price: 1.50, category: 'Food' },
+    { id: 4, name: 'Soda', price: 1.00, category: 'Drinks' },
+    { id: 5, name: 'Water', price: 0.50, category: 'Drinks' },
+    { id: 6, name: 'Cake', price: 2.50, category: 'Desserts' },
+    { id: 7, name: 'Coffee', price: 1.50, category: 'Drinks' },
+    { id: 8, name: 'Popcorn', price: 2.00, category: 'Food' },
   ];
+}
+
+// ===== DARK MODE =====
+function toggleDark() {
+  darkMode = !darkMode;
+  localStorage.setItem('kermess-dark', darkMode);
+  applyDark();
+}
+function applyDark() {
+  document.getElementById('cashierPage').classList.toggle('dark', darkMode);
 }
 
 // ===== PEER =====
 function joinAs(selectedRole) {
   role = selectedRole;
   loadState();
+  applyDark();
   const myId = 'kermess-' + ROOM + '-' + role;
   const otherId = 'kermess-' + ROOM + '-' + (role === 'cashier' ? 'kitchen' : 'cashier');
   peer = new Peer(myId);
@@ -553,31 +568,23 @@ function joinAs(selectedRole) {
     }
   });
 }
-
 function tryConnect(otherId) {
   if (connected) return;
   const c = peer.connect(otherId, { reliable: true });
   c.on('open', () => setupConnection(c));
   c.on('error', () => setTimeout(() => tryConnect(otherId), 3000));
 }
-
 function setupConnection(c) {
   if (conn) conn.close();
-  conn = c;
-  connected = true;
-  updateConnectionStatus(true);
+  conn = c; connected = true; updateConnectionStatus(true);
   sendMsg({ type: 'sync', menu, orders, orderIdCounter, itemIdCounter });
   conn.on('data', handleMessage);
   conn.on('close', () => {
-    connected = false;
-    updateConnectionStatus(false);
-    const otherId = 'kermess-' + ROOM + '-' + (role === 'cashier' ? 'kitchen' : 'cashier');
-    setTimeout(() => tryConnect(otherId), 2000);
+    connected = false; updateConnectionStatus(false);
+    setTimeout(() => tryConnect('kermess-' + ROOM + '-' + (role === 'cashier' ? 'kitchen' : 'cashier')), 2000);
   });
 }
-
 function sendMsg(msg) { if (conn && conn.open) conn.send(msg); }
-
 function handleMessage(msg) {
   switch (msg.type) {
     case 'sync':
@@ -601,13 +608,10 @@ function handleMessage(msg) {
     case 'item-done':
       for (const o of orders) for (const it of o.items) if (it.id === msg.itemId) it.done = true;
       saveState(); render(); break;
-    case 'menu-add':
-      menu.push(msg.item); saveState(); render(); break;
-    case 'menu-delete':
-      menu = menu.filter(m => m.id !== msg.id); saveState(); render(); break;
+    case 'menu-add': menu.push(msg.item); saveState(); render(); break;
+    case 'menu-delete': menu = menu.filter(m => m.id !== msg.id); saveState(); render(); break;
   }
 }
-
 function updateConnectionStatus(on) {
   const el = document.getElementById(role === 'cashier' ? 'cashierStatus' : 'kitchenStatus');
   const other = role === 'cashier' ? 'Kitchen' : 'Cashier';
@@ -615,40 +619,56 @@ function updateConnectionStatus(on) {
   el.querySelector('.status-text').textContent = on ? other + ' connected' : 'Waiting...';
 }
 
+// ===== CATEGORIES =====
+function getCategories() {
+  const cats = new Set(menu.map(m => m.category || 'Other'));
+  return ['All', ...Array.from(cats).sort()];
+}
+function renderCatTabs() {
+  const cats = getCategories();
+  document.getElementById('catTabs').innerHTML = cats.map(c =>
+    `<button class="cat-tab ${c === selectedCat ? 'active' : ''}" onclick="selectCat('${esc(c)}')">${escHtml(c)}</button>`
+  ).join('');
+}
+function selectCat(cat) {
+  selectedCat = cat;
+  renderCatTabs();
+  renderMenu();
+}
+
 // ===== CASHIER =====
 function renderMenu() {
-  document.getElementById('menuGrid').innerHTML = menu.map(item => `
+  const filtered = selectedCat === 'All' ? menu : menu.filter(m => (m.category || 'Other') === selectedCat);
+  document.getElementById('menuGrid').innerHTML = filtered.map(item => `
     <div class="menu-item" onclick="addToCart('${esc(item.name)}', ${item.price})">
       <button class="m-del" onclick="event.stopPropagation(); deleteMenuItem(${item.id})" title="Remove">&times;</button>
       <div class="m-name">${escHtml(item.name)}</div>
+      <div class="m-cat">${escHtml(item.category || 'Other')}</div>
       <div class="m-price">$${item.price.toFixed(2)}</div>
     </div>
   `).join('');
 }
-
 function addMenuItem() {
   const name = document.getElementById('newItemName').value.trim();
   const price = parseFloat(document.getElementById('newItemPrice').value);
+  const category = document.getElementById('newItemCat').value;
   if (!name || isNaN(price) || price < 0) return;
-  const item = { id: Date.now(), name, price };
-  menu.push(item); saveState(); renderMenu();
+  const item = { id: Date.now(), name, price, category };
+  menu.push(item); saveState(); renderCatTabs(); renderMenu();
   sendMsg({ type: 'menu-add', item });
   document.getElementById('newItemName').value = '';
   document.getElementById('newItemPrice').value = '';
 }
-
 function deleteMenuItem(id) {
   if (!confirm('Remove this item?')) return;
-  menu = menu.filter(m => m.id !== id); saveState(); renderMenu();
+  menu = menu.filter(m => m.id !== id); saveState(); renderCatTabs(); renderMenu();
   sendMsg({ type: 'menu-delete', id });
 }
-
 function addToCart(name, price) {
   const ex = cart.find(c => c.name === name);
   if (ex) ex.qty++; else cart.push({ name, price, qty: 1, comment: '' });
   renderCart();
 }
-
 function changeQty(name, delta) {
   const item = cart.find(c => c.name === name);
   if (!item) return;
@@ -656,19 +676,16 @@ function changeQty(name, delta) {
   if (item.qty <= 0) cart = cart.filter(c => c.name !== name);
   renderCart();
 }
-
 function updateComment(name, comment) {
   const item = cart.find(c => c.name === name);
   if (item) item.comment = comment;
 }
-
 function renderCart() {
   const list = document.getElementById('cartList');
   const footer = document.getElementById('cartFooter');
   if (cart.length === 0) {
     list.innerHTML = '<div class="cart-empty">Tap menu items to add them to the order</div>';
-    footer.style.display = 'none';
-    return;
+    footer.style.display = 'none'; return;
   }
   list.innerHTML = cart.map(item => `
     <div class="cart-item">
@@ -684,15 +701,15 @@ function renderCart() {
         <span class="item-total">$${(item.price * item.qty).toFixed(2)}</span>
       </div>
       <input class="comment-input" type="text" placeholder="Add a note..."
-        value="${escAttr(item.comment)}"
-        onchange="updateComment('${esc(item.name)}', this.value)">
+        value="${escAttr(item.comment)}" onchange="updateComment('${esc(item.name)}', this.value)">
     </div>
   `).join('');
   const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
   document.getElementById('totalAmount').textContent = '$' + total.toFixed(2);
   footer.style.display = 'block';
+  renderQuickCash();
+  calcChange();
 }
-
 function sendOrder() {
   const name = document.getElementById('customerName').value.trim();
   if (!name) { document.getElementById('customerName').focus(); showToast('Enter a customer name', '#ef4444'); return; }
@@ -705,8 +722,7 @@ function sendOrder() {
   const order = { id: orderId, customer_name: name, created_at: new Date().toISOString(), items };
   orders.unshift(order); saveState();
   sendMsg({ type: 'new-order', order });
-  cart = [];
-  numClear();
+  cart = []; receivedAmount = 0;
   document.getElementById('customerName').value = '';
   renderCart();
   showToast('Order sent!');
@@ -715,70 +731,74 @@ function sendOrder() {
 // ===== CHANGE CALCULATOR =====
 const LBP_RATE = 90000;
 let currency = 'usd';
-let numpadValue = '';
+let receivedAmount = 0;
 
 function setCurrency(c) {
   currency = c;
   document.getElementById('tab-usd').className = 'currency-tab' + (c === 'usd' ? ' active' : '');
   document.getElementById('tab-lbp').className = 'currency-tab' + (c === 'lbp' ? ' active' : '');
   document.getElementById('receivedLabel').textContent = c === 'usd' ? 'Received $' : 'Received L.L.';
-  numClear();
-}
-
-function numPress(key) {
-  if (key === '.' && numpadValue.includes('.')) return;
-  if (key === '.' && numpadValue === '') { numpadValue = '0'; }
-  // Limit decimals to 2 for USD
-  if (numpadValue.includes('.') && numpadValue.split('.')[1].length >= 2 && currency === 'usd') return;
-  numpadValue += key;
-  updateCalcDisplay();
-}
-
-function numBack() {
-  numpadValue = numpadValue.slice(0, -1);
-  updateCalcDisplay();
-}
-
-function numClear() {
-  numpadValue = '';
-  updateCalcDisplay();
-}
-
-function updateCalcDisplay() {
-  document.getElementById('receivedDisplay').textContent = numpadValue || '0';
+  receivedAmount = 0;
+  renderQuickCash();
   calcChange();
 }
-
+function renderQuickCash() {
+  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  let buttons = '';
+  if (currency === 'usd') {
+    const amounts = [1, 2, 5, 10, 20, 50];
+    buttons = amounts.map(a =>
+      `<button onclick="setReceived(${a})">$${a}</button>`
+    ).join('');
+  } else {
+    const amounts = [50000, 100000, 250000, 500000, 1000000, 2000000];
+    buttons = amounts.map(a =>
+      `<button onclick="setReceived(${a})">${(a/1000)}K</button>`
+    ).join('');
+  }
+  // Add exact and clear buttons
+  const exactVal = currency === 'usd' ? total : total * LBP_RATE;
+  buttons += `<button class="exact-btn" onclick="setReceived(${exactVal})">Exact</button>`;
+  buttons += `<button class="clear-btn" onclick="setReceived(0)">Clear</button>`;
+  document.getElementById('quickCash').innerHTML = buttons;
+  updateReceivedDisplay();
+}
+function setReceived(amount) {
+  receivedAmount = amount;
+  updateReceivedDisplay();
+  calcChange();
+}
+function updateReceivedDisplay() {
+  const display = document.getElementById('receivedDisplay');
+  if (receivedAmount === 0) {
+    display.textContent = '0';
+  } else if (currency === 'usd') {
+    display.textContent = '$' + receivedAmount.toFixed(2);
+  } else {
+    display.textContent = formatLBP(receivedAmount) + ' L.L.';
+  }
+}
 function calcChange() {
   const totalUSD = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const received = parseFloat(numpadValue) || 0;
   const el = document.getElementById('changeResult');
   const amt = document.getElementById('changeAmount');
-
-  if (received === 0) {
+  if (receivedAmount === 0) {
     el.className = 'change-result zero';
-    amt.textContent = 'Enter amount received';
+    amt.textContent = 'Tap an amount above';
     return;
   }
-
-  let receivedUSD = currency === 'usd' ? received : received / LBP_RATE;
+  let receivedUSD = currency === 'usd' ? receivedAmount : receivedAmount / LBP_RATE;
   let changeUSD = receivedUSD - totalUSD;
-
   if (changeUSD >= 0) {
     el.className = 'change-result positive';
-    const changeLBP = changeUSD * LBP_RATE;
-    amt.textContent = `$${changeUSD.toFixed(2)} / ${formatLBP(changeLBP)} L.L.`;
+    amt.textContent = `$${changeUSD.toFixed(2)} / ${formatLBP(changeUSD * LBP_RATE)} L.L.`;
   } else {
     el.className = 'change-result negative';
-    const stillOwed = Math.abs(changeUSD);
-    const owedLBP = stillOwed * LBP_RATE;
-    amt.textContent = `Still owed: $${stillOwed.toFixed(2)} / ${formatLBP(owedLBP)} L.L.`;
+    const owed = Math.abs(changeUSD);
+    amt.textContent = `Still owed: $${owed.toFixed(2)} / ${formatLBP(owed * LBP_RATE)} L.L.`;
   }
 }
-
-function formatLBP(amount) {
-  return Math.round(amount).toLocaleString();
-}
+function formatLBP(amount) { return Math.round(amount).toLocaleString(); }
 
 // ===== KITCHEN =====
 function getElapsed(createdAt) {
@@ -791,21 +811,16 @@ function getElapsed(createdAt) {
   else if (mins >= 5) cls = 'timer-yellow';
   return { text, cls };
 }
-
 function setFilter(f) {
   filter = f;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('filter-' + f).classList.add('active');
   renderKitchen();
 }
-
 function markDone(itemId) {
   for (const o of orders) for (const it of o.items) if (it.id === itemId) it.done = true;
-  saveState();
-  sendMsg({ type: 'item-done', itemId });
-  renderKitchen();
+  saveState(); sendMsg({ type: 'item-done', itemId }); renderKitchen();
 }
-
 function renderKitchen() {
   const grid = document.getElementById('ordersGrid');
   const totalPending = orders.reduce((s, o) => s + o.items.filter(i => !i.done).length, 0);
@@ -871,7 +886,7 @@ function exportExcel() {
 
 // ===== SHARED =====
 function render() {
-  if (role === 'cashier') { renderMenu(); renderCart(); }
+  if (role === 'cashier') { renderCatTabs(); renderMenu(); renderCart(); }
   else if (role === 'kitchen') { renderKitchen(); }
 }
 function leavePage() {
@@ -883,8 +898,7 @@ function leavePage() {
 function showToast(msg, color = '#22c55e') {
   const t = document.getElementById('toast');
   t.textContent = msg; t.style.background = color;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2000);
+  t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000);
 }
 function playBeep() {
   try {
@@ -900,16 +914,9 @@ function escHtml(s) { const d = document.createElement('div'); d.textContent = s
 function escAttr(s) { return s.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
 setInterval(() => {
-  if (peer && !connected) {
-    const otherId = 'kermess-' + ROOM + '-' + (role === 'cashier' ? 'kitchen' : 'cashier');
-    tryConnect(otherId);
-  }
+  if (peer && !connected) tryConnect('kermess-' + ROOM + '-' + (role === 'cashier' ? 'kitchen' : 'cashier'));
 }, 5000);
-
-// Live timer refresh for kitchen
-setInterval(() => {
-  if (role === 'kitchen') renderKitchen();
-}, 1000);
+setInterval(() => { if (role === 'kitchen') renderKitchen(); }, 1000);
 </script>
 </body>
 </html>
