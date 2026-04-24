@@ -4,295 +4,430 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kermess POS</title>
-  <!-- PeerJS for WebRTC peer-to-peer communication -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-  <!-- SheetJS for Excel export -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; min-height: 100vh; }
+    body { font-family: 'Inter', 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; min-height: 100vh; overflow-x: hidden; }
 
     /* ===== LANDING PAGE ===== */
     .landing {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      min-height: 100vh; padding: 20px; background: linear-gradient(135deg, #1e3a5f 0%, #0f1b2d 100%);
-      color: white;
+      min-height: 100vh; padding: 20px;
+      background: radial-gradient(ellipse at top, #1a1a2e 0%, #0a0a0a 70%);
     }
-    .landing h1 { font-size: 2.2rem; margin-bottom: 8px; }
-    .landing .subtitle { color: #7eb8da; margin-bottom: 40px; font-size: 1.1rem; }
-    .landing-card {
-      background: rgba(255,255,255,0.08); backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.15); border-radius: 16px;
-      padding: 36px; max-width: 420px; width: 100%; text-align: center;
+    .landing-logo {
+      width: 80px; height: 80px; border-radius: 20px; margin-bottom: 24px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex;
+      align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 900;
+      box-shadow: 0 8px 32px rgba(99,102,241,0.3);
     }
-    .landing-card label { display: block; text-align: left; margin-bottom: 6px; font-weight: 600; font-size: 0.95rem; color: #b0c4de; }
-    .landing-card input {
-      width: 100%; padding: 14px; font-size: 1.2rem; border: 2px solid rgba(255,255,255,0.2);
-      border-radius: 10px; background: rgba(255,255,255,0.05); color: white;
-      text-align: center; letter-spacing: 4px; font-weight: 700; outline: none;
-      margin-bottom: 24px; text-transform: uppercase;
+    .landing h1 { font-size: 2.4rem; font-weight: 900; letter-spacing: -1px; margin-bottom: 6px; }
+    .landing h1 span { background: linear-gradient(135deg, #6366f1, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .landing .subtitle { color: #666; margin-bottom: 48px; font-size: 1rem; font-weight: 500; }
+    .role-cards { display: flex; gap: 20px; max-width: 560px; width: 100%; }
+    .role-card {
+      flex: 1; padding: 32px 24px; border-radius: 16px; cursor: pointer;
+      transition: all 0.25s ease; text-align: center; border: 1px solid #1a1a2e;
+      background: #111118;
     }
-    .landing-card input::placeholder { letter-spacing: 1px; font-weight: 400; color: #667; }
-    .landing-card input:focus { border-color: #4a9eda; }
-    .role-buttons { display: flex; gap: 12px; }
-    .role-btn {
-      flex: 1; padding: 18px; border: 2px solid rgba(255,255,255,0.2); border-radius: 12px;
-      background: rgba(255,255,255,0.05); color: white; cursor: pointer; transition: all 0.2s;
-      font-size: 1rem; font-weight: 600;
+    .role-card:hover { transform: translateY(-4px); }
+    .role-card.cashier-card:hover { border-color: #6366f1; box-shadow: 0 8px 40px rgba(99,102,241,0.2); }
+    .role-card.kitchen-card:hover { border-color: #f97316; box-shadow: 0 8px 40px rgba(249,115,22,0.2); }
+    .role-card .role-icon {
+      width: 56px; height: 56px; border-radius: 14px; margin: 0 auto 16px;
+      display: flex; align-items: center; justify-content: center; font-size: 1.6rem;
     }
-    .role-btn:hover { transform: translateY(-2px); }
-    .role-btn.cashier:hover { background: #2563eb; border-color: #2563eb; }
-    .role-btn.kitchen:hover { background: #e94560; border-color: #e94560; }
-    .role-btn .icon { font-size: 2rem; display: block; margin-bottom: 8px; }
-    .landing-error { color: #f87171; margin-top: 12px; font-size: 0.9rem; min-height: 20px; }
+    .cashier-card .role-icon { background: rgba(99,102,241,0.15); }
+    .kitchen-card .role-icon { background: rgba(249,115,22,0.15); }
+    .role-card .role-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 6px; }
+    .role-card .role-desc { font-size: 0.82rem; color: #666; line-height: 1.4; }
 
-    /* ===== SHARED ===== */
+    /* ===== PAGES ===== */
     .page { display: none; min-height: 100vh; }
-    .page.active { display: block; }
-    .connection-status {
-      padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
-      display: inline-flex; align-items: center; gap: 6px;
+    .page.active { display: flex; }
+
+    /* ===== CONNECTION BADGE ===== */
+    .conn-badge {
+      display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px;
+      border-radius: 8px; font-size: 0.75rem; font-weight: 600;
     }
-    .connection-status .dot { width: 8px; height: 8px; border-radius: 50%; }
-    .status-connected { background: rgba(16,185,129,0.15); color: #10b981; }
-    .status-connected .dot { background: #10b981; }
-    .status-waiting { background: rgba(251,191,36,0.15); color: #f59e0b; }
-    .status-waiting .dot { background: #f59e0b; }
+    .conn-badge .dot { width: 7px; height: 7px; border-radius: 50%; }
+    .conn-badge.on { background: rgba(34,197,94,0.1); color: #22c55e; }
+    .conn-badge.on .dot { background: #22c55e; }
+    .conn-badge.off { background: rgba(250,204,21,0.1); color: #facc15; }
+    .conn-badge.off .dot { background: #facc15; }
 
     /* ===== CASHIER PAGE ===== */
-    .cashier-page { background: #f0f2f5; }
-    .cashier-page .header {
-      background: #2563eb; color: white; padding: 14px 20px;
-      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+    .cashier-page {
+      background: #f5f5f7; color: #1a1a1a; flex-direction: column;
     }
-    .cashier-page .header h1 { font-size: 1.2rem; }
-    .cashier-page .header .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .cashier-page .header button {
-      background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
-      color: white; padding: 7px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;
+    .cashier-topbar {
+      background: #fff; border-bottom: 1px solid #e5e5e5; padding: 12px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; z-index: 50;
     }
-    .cashier-page .header button:hover { background: rgba(255,255,255,0.3); }
-    .container { max-width: 800px; margin: 16px auto; padding: 0 14px; }
+    .cashier-topbar .brand { display: flex; align-items: center; gap: 10px; }
+    .cashier-topbar .brand-icon {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 0.85rem; color: #fff;
+    }
+    .cashier-topbar .brand-name { font-weight: 800; font-size: 1rem; color: #1a1a1a; }
+    .cashier-topbar .brand-role { font-size: 0.75rem; color: #999; font-weight: 500; }
+    .topbar-actions { display: flex; gap: 8px; align-items: center; }
+    .topbar-btn {
+      padding: 7px 14px; border-radius: 8px; border: 1px solid #e5e5e5;
+      background: #fff; color: #555; cursor: pointer; font-size: 0.8rem;
+      font-weight: 600; transition: all 0.15s;
+    }
+    .topbar-btn:hover { background: #f5f5f7; border-color: #ccc; }
+    .topbar-btn.primary { background: #6366f1; color: #fff; border-color: #6366f1; }
+    .topbar-btn.primary:hover { background: #4f46e5; }
 
-    .name-section {
-      background: white; border-radius: 10px; padding: 16px; margin-bottom: 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    .cashier-body {
+      display: flex; flex: 1; overflow: hidden;
     }
-    .name-section label { font-weight: 600; display: block; margin-bottom: 6px; }
-    .name-section input {
-      width: 100%; padding: 12px; font-size: 1.05rem; border: 2px solid #e5e7eb;
-      border-radius: 8px; outline: none;
+
+    /* Left: Menu */
+    .menu-panel {
+      flex: 1; padding: 20px; overflow-y: auto; max-height: calc(100vh - 57px);
     }
-    .name-section input:focus { border-color: #2563eb; }
-
-    .section-title { font-size: 1rem; font-weight: 600; color: #666; margin-bottom: 10px; }
-
+    .menu-panel .panel-title {
+      font-size: 0.8rem; font-weight: 700; color: #999; text-transform: uppercase;
+      letter-spacing: 1px; margin-bottom: 14px;
+    }
     .menu-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px;
-      margin-bottom: 10px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 10px;
+      margin-bottom: 16px;
     }
     .menu-item {
-      background: white; border: 2px solid #e5e7eb; border-radius: 10px;
-      padding: 14px 10px; text-align: center; cursor: pointer; transition: all 0.15s;
-      position: relative;
+      background: #fff; border: 1.5px solid #eee; border-radius: 12px;
+      padding: 18px 12px; text-align: center; cursor: pointer;
+      transition: all 0.15s; position: relative;
     }
-    .menu-item:hover { border-color: #2563eb; transform: translateY(-1px); }
-    .menu-item .name { font-weight: 600; font-size: 0.95rem; margin-bottom: 2px; }
-    .menu-item .price { color: #2563eb; font-weight: 700; }
-    .menu-item .del {
-      position: absolute; top: 2px; right: 6px; background: none; border: none;
-      color: #ccc; cursor: pointer; font-size: 1.1rem;
+    .menu-item:hover { border-color: #6366f1; box-shadow: 0 2px 12px rgba(99,102,241,0.1); transform: translateY(-1px); }
+    .menu-item:active { transform: scale(0.97); }
+    .menu-item .m-name { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; color: #1a1a1a; }
+    .menu-item .m-price { color: #6366f1; font-weight: 800; font-size: 1rem; }
+    .menu-item .m-del {
+      position: absolute; top: 4px; right: 8px; background: none; border: none;
+      color: #ccc; cursor: pointer; font-size: 1rem; width: 22px; height: 22px;
+      display: flex; align-items: center; justify-content: center; border-radius: 50%;
     }
-    .menu-item .del:hover { color: #ef4444; }
+    .menu-item .m-del:hover { color: #ef4444; background: #fef2f2; }
+    .add-item-bar {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .add-item-bar input {
+      padding: 9px 12px; border: 1.5px solid #e5e5e5; border-radius: 8px;
+      font-size: 0.85rem; outline: none; font-family: inherit;
+    }
+    .add-item-bar input:focus { border-color: #6366f1; }
+    .add-item-bar input:first-child { flex: 1; min-width: 100px; }
+    .add-item-bar input:nth-child(2) { width: 80px; }
+    .add-item-bar button {
+      background: #6366f1; color: #fff; border: none; padding: 9px 16px;
+      border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.85rem;
+      font-family: inherit;
+    }
+    .add-item-bar button:hover { background: #4f46e5; }
 
-    .add-item-row {
-      display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+    /* Right: Cart */
+    .cart-panel {
+      width: 360px; min-width: 320px; background: #fff; border-left: 1px solid #e5e5e5;
+      display: flex; flex-direction: column; max-height: calc(100vh - 57px);
     }
-    .add-item-row input {
-      padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem;
+    .cart-header {
+      padding: 16px 20px; border-bottom: 1px solid #f0f0f0;
     }
-    .add-item-row input:first-child { flex: 1; min-width: 100px; }
-    .add-item-row input:nth-child(2) { width: 70px; }
-    .add-item-row button {
-      background: #10b981; color: white; border: none; padding: 8px 14px;
-      border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem;
+    .cart-header .panel-title {
+      font-size: 0.8rem; font-weight: 700; color: #999; text-transform: uppercase;
+      letter-spacing: 1px; margin-bottom: 10px;
     }
-
-    .cart-section {
-      background: white; border-radius: 10px; padding: 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 16px;
+    .customer-input {
+      width: 100%; padding: 10px 14px; border: 1.5px solid #e5e5e5; border-radius: 10px;
+      font-size: 0.95rem; outline: none; font-family: inherit; font-weight: 500;
     }
-    .cart-empty { color: #aaa; text-align: center; padding: 20px; font-style: italic; }
-    .cart-item {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 8px 0; border-bottom: 1px solid #f3f4f6;
-    }
+    .customer-input:focus { border-color: #6366f1; }
+    .cart-items { flex: 1; overflow-y: auto; padding: 8px 20px; }
+    .cart-empty { color: #bbb; text-align: center; padding: 40px 10px; font-size: 0.9rem; }
+    .cart-item { padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
     .cart-item:last-child { border-bottom: none; }
+    .cart-item-top { display: flex; justify-content: space-between; align-items: center; }
     .cart-item .info { display: flex; align-items: center; gap: 8px; }
     .qty-controls { display: flex; align-items: center; gap: 4px; }
     .qty-controls button {
-      width: 26px; height: 26px; border-radius: 50%; border: 1px solid #ddd;
-      background: #f9fafb; cursor: pointer; font-size: 1rem;
-      display: flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 8px; border: 1.5px solid #e5e5e5;
+      background: #fafafa; cursor: pointer; font-size: 1rem; color: #555;
+      display: flex; align-items: center; justify-content: center; font-family: inherit;
     }
-    .qty-controls button:hover { background: #e5e7eb; }
-    .qty { font-weight: 600; min-width: 18px; text-align: center; }
-    .item-total { font-weight: 600; color: #2563eb; }
-
-    .cart-total {
-      display: flex; justify-content: space-between; padding-top: 10px; margin-top: 8px;
-      border-top: 2px solid #e5e7eb; font-weight: 700; font-size: 1.1rem;
+    .qty-controls button:hover { background: #f0f0f0; border-color: #ccc; }
+    .qty { font-weight: 700; min-width: 20px; text-align: center; font-size: 0.95rem; }
+    .cart-item-name { font-weight: 600; font-size: 0.9rem; }
+    .item-total { font-weight: 700; color: #6366f1; font-size: 0.95rem; }
+    .comment-input {
+      width: 100%; padding: 7px 10px; margin-top: 8px; border: 1px solid #eee;
+      border-radius: 8px; font-size: 0.8rem; outline: none; color: #777;
+      font-family: inherit; background: #fafafa;
     }
+    .comment-input:focus { border-color: #6366f1; background: #fff; }
+    .comment-input::placeholder { color: #ccc; }
 
+    .cart-footer {
+      padding: 16px 20px; border-top: 1px solid #f0f0f0; background: #fafafa;
+    }
+    .cart-total-row {
+      display: flex; justify-content: space-between; margin-bottom: 12px;
+      font-weight: 800; font-size: 1.15rem;
+    }
+    .cart-total-amount { color: #6366f1; }
     .send-btn {
-      width: 100%; padding: 14px; background: #2563eb; color: white; border: none;
-      border-radius: 10px; font-size: 1.1rem; font-weight: 700; cursor: pointer; margin-top: 8px;
+      width: 100%; padding: 14px; background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #fff; border: none; border-radius: 12px; font-size: 1rem;
+      font-weight: 700; cursor: pointer; font-family: inherit;
+      box-shadow: 0 4px 16px rgba(99,102,241,0.3); transition: all 0.15s;
     }
-    .send-btn:hover { background: #1d4ed8; }
-    .send-btn:disabled { background: #93c5fd; cursor: not-allowed; }
+    .send-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(99,102,241,0.4); }
+    .send-btn:active { transform: scale(0.98); }
+    .send-btn:disabled { background: #d4d4d8; box-shadow: none; cursor: not-allowed; transform: none; }
+
+    /* Change Calculator */
+    .change-calc {
+      margin-top: 14px; padding-top: 14px; border-top: 1px solid #e5e5e5;
+    }
+    .change-calc .calc-title {
+      font-size: 0.75rem; font-weight: 700; color: #999; text-transform: uppercase;
+      letter-spacing: 1px; margin-bottom: 10px;
+    }
+    .currency-tabs {
+      display: flex; gap: 4px; margin-bottom: 10px; background: #f0f0f0;
+      border-radius: 8px; padding: 3px;
+    }
+    .currency-tab {
+      flex: 1; padding: 6px; border: none; border-radius: 6px; cursor: pointer;
+      font-size: 0.8rem; font-weight: 700; font-family: inherit;
+      background: transparent; color: #888; transition: all 0.15s;
+    }
+    .currency-tab.active { background: #fff; color: #1a1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .calc-input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .calc-input-row label { font-size: 0.82rem; font-weight: 600; color: #666; white-space: nowrap; }
+    .calc-input {
+      flex: 1; padding: 9px 12px; border: 1.5px solid #e5e5e5; border-radius: 8px;
+      font-size: 0.95rem; font-weight: 600; outline: none; font-family: inherit;
+    }
+    .calc-input:focus { border-color: #6366f1; }
+    .change-result {
+      padding: 10px 14px; border-radius: 10px; text-align: center;
+      font-weight: 800; font-size: 1.05rem;
+    }
+    .change-result.positive { background: #f0fdf4; color: #16a34a; }
+    .change-result.negative { background: #fef2f2; color: #ef4444; }
+    .change-result.zero { background: #f5f5f5; color: #999; }
+    .change-result .change-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7; display: block; margin-bottom: 2px; }
 
     /* ===== KITCHEN PAGE ===== */
-    .kitchen-page { background: #1a1a2e; color: #eee; }
-    .kitchen-page .header {
-      background: #16213e; padding: 14px 20px; border-bottom: 2px solid #0f3460;
-      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+    .kitchen-page { background: #0f0f13; color: #eee; flex-direction: column; }
+    .kitchen-topbar {
+      background: #18181b; border-bottom: 1px solid #27272a; padding: 12px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; z-index: 50;
     }
-    .kitchen-page .header h1 { font-size: 1.2rem; color: #e94560; }
-    .kitchen-page .header .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .kitchen-page .header button {
-      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-      color: white; padding: 7px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;
+    .kitchen-topbar .brand { display: flex; align-items: center; gap: 10px; }
+    .kitchen-topbar .brand-icon {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: linear-gradient(135deg, #f97316, #ef4444);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 0.85rem; color: #fff;
     }
-    .kitchen-page .header button:hover { background: rgba(255,255,255,0.2); }
-    .kitchen-page .stats { color: #aaa; font-size: 0.85rem; }
+    .kitchen-topbar .brand-name { font-weight: 800; font-size: 1rem; color: #fff; }
+    .kitchen-topbar .brand-role { font-size: 0.75rem; color: #666; font-weight: 500; }
+    .kitchen-topbar .stats-badge {
+      background: rgba(249,115,22,0.1); color: #f97316; padding: 5px 14px;
+      border-radius: 8px; font-weight: 700; font-size: 0.8rem;
+    }
+    .kitchen-actions { display: flex; gap: 8px; align-items: center; }
+    .kitchen-btn {
+      padding: 7px 14px; border-radius: 8px; border: 1px solid #27272a;
+      background: #18181b; color: #aaa; cursor: pointer; font-size: 0.8rem;
+      font-weight: 600; transition: all 0.15s; font-family: inherit;
+    }
+    .kitchen-btn:hover { background: #27272a; color: #fff; }
 
-    .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; padding: 16px 16px 0; }
-    .filter-bar button {
-      padding: 7px 16px; border-radius: 20px; border: 1px solid #333;
-      background: #16213e; color: #ccc; cursor: pointer; font-size: 0.85rem;
+    .filter-bar {
+      display: flex; gap: 6px; padding: 16px 20px 0;
     }
-    .filter-bar button.active { background: #e94560; color: white; border-color: #e94560; }
+    .filter-btn {
+      padding: 7px 18px; border-radius: 8px; border: 1px solid #27272a;
+      background: transparent; color: #666; cursor: pointer; font-size: 0.8rem;
+      font-weight: 600; transition: all 0.15s; font-family: inherit;
+    }
+    .filter-btn.active { background: #f97316; color: #fff; border-color: #f97316; }
 
     .orders-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 14px; padding: 0 16px 16px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 14px; padding: 16px 20px;
     }
     .order-card {
-      background: #16213e; border-radius: 12px; border: 1px solid #0f3460; overflow: hidden;
+      background: #18181b; border-radius: 14px; border: 1px solid #27272a;
+      overflow: hidden; transition: opacity 0.3s;
     }
-    .order-card.all-done { opacity: 0.5; }
+    .order-card.all-done { opacity: 0.4; }
     .order-header {
-      background: #0f3460; padding: 12px 16px;
+      background: #1e1e24; padding: 14px 18px;
       display: flex; justify-content: space-between; align-items: center;
     }
-    .customer-name { font-weight: 700; font-size: 1.05rem; color: #e94560; }
-    .order-time { font-size: 0.8rem; color: #888; }
-    .order-id { font-size: 0.7rem; color: #555; }
-    .order-items-list { padding: 8px 16px; }
+    .customer-name { font-weight: 800; font-size: 1.05rem; color: #f97316; }
+    .order-meta { text-align: right; }
+    .order-time { font-size: 0.8rem; color: #555; font-weight: 500; }
+    .order-id { font-size: 0.7rem; color: #444; }
+    .order-items-list { padding: 8px 18px 14px; }
     .order-item-row {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 9px 0; border-bottom: 1px solid #222;
     }
     .order-item-row:last-child { border-bottom: none; }
-    .order-item-row.done .oitem-name { text-decoration: line-through; color: #555; }
+    .order-item-row.done .oitem-name { text-decoration: line-through; color: #444; }
+    .oitem-name { font-weight: 600; font-size: 0.9rem; }
+    .oitem-comment { font-size: 0.78rem; color: #f59e0b; font-style: italic; margin-top: 3px; }
     .done-btn {
-      padding: 5px 14px; border-radius: 6px; border: none; cursor: pointer;
-      font-weight: 600; font-size: 0.8rem;
+      padding: 6px 16px; border-radius: 8px; border: none; cursor: pointer;
+      font-weight: 700; font-size: 0.78rem; font-family: inherit; transition: all 0.15s;
     }
-    .done-btn.pending { background: #10b981; color: white; }
-    .done-btn.pending:hover { background: #059669; }
-    .done-btn.completed { background: #333; color: #555; cursor: default; }
+    .done-btn.pending { background: #22c55e; color: #fff; }
+    .done-btn.pending:hover { background: #16a34a; }
+    .done-btn.completed { background: #27272a; color: #444; cursor: default; }
 
-    .empty-state { text-align: center; padding: 60px 20px; color: #444; }
-    .empty-state h2 { color: #555; margin-bottom: 8px; }
+    .empty-state { text-align: center; padding: 80px 20px; color: #444; grid-column: 1 / -1; }
+    .empty-state h2 { color: #555; margin-bottom: 8px; font-size: 1.2rem; }
+    .empty-state p { font-size: 0.85rem; }
 
-    @keyframes flash { 0%,100%{border-color:#0f3460} 50%{border-color:#e94560} }
+    @keyframes flash { 0%,100%{border-color:#27272a} 50%{border-color:#f97316} }
     .order-card.new { animation: flash 0.5s ease 3; }
 
     /* Toast */
     .toast {
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-      padding: 12px 24px; border-radius: 10px; font-weight: 600; opacity: 0;
-      transition: opacity 0.3s; pointer-events: none; z-index: 100; color: white;
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      padding: 12px 28px; border-radius: 10px; font-weight: 700; opacity: 0;
+      transition: opacity 0.3s; pointer-events: none; z-index: 200; color: #fff;
+      font-size: 0.9rem; backdrop-filter: blur(8px);
     }
     .toast.show { opacity: 1; }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .role-cards { flex-direction: column; }
+      .cashier-body { flex-direction: column; }
+      .cart-panel { width: 100%; min-width: 0; border-left: none; border-top: 1px solid #e5e5e5; max-height: none; }
+      .menu-panel { max-height: none; }
+    }
   </style>
 </head>
 <body>
 
 <!-- ===== LANDING PAGE ===== -->
 <div class="landing page active" id="landingPage">
-  <h1>Kermess POS</h1>
-  <p class="subtitle">Point of Sale System</p>
-  <div class="landing-card">
-    <label for="roomCode">Room Code</label>
-    <input type="text" id="roomCode" placeholder="e.g. KERMESS1" maxlength="20" autocomplete="off">
-    <label style="margin-top: 8px;">I am the...</label>
-    <div class="role-buttons">
-      <button class="role-btn cashier" onclick="joinRoom('cashier')">
-        <span class="icon">&#128179;</span>
-        Cashier
-      </button>
-      <button class="role-btn kitchen" onclick="joinRoom('kitchen')">
-        <span class="icon">&#127859;</span>
-        Kitchen
-      </button>
+  <div class="landing-logo">K</div>
+  <h1><span>Kermess</span> POS</h1>
+  <p class="subtitle">Select your station to get started</p>
+  <div class="role-cards">
+    <div class="role-card cashier-card" onclick="joinAs('cashier')">
+      <div class="role-icon">&#128179;</div>
+      <div class="role-title">Cashier</div>
+      <div class="role-desc">Take orders, manage menu items, and process sales</div>
     </div>
-    <div class="landing-error" id="landingError"></div>
+    <div class="role-card kitchen-card" onclick="joinAs('kitchen')">
+      <div class="role-icon">&#127859;</div>
+      <div class="role-title">Kitchen</div>
+      <div class="role-desc">View incoming orders and mark items as completed</div>
+    </div>
   </div>
 </div>
 
 <!-- ===== CASHIER PAGE ===== -->
 <div class="cashier-page page" id="cashierPage">
-  <div class="header">
-    <h1>Cashier</h1>
-    <div class="actions">
-      <span class="connection-status status-waiting" id="cashierStatus">
-        <span class="dot"></span> <span class="status-text">Waiting for kitchen...</span>
+  <div class="cashier-topbar">
+    <div class="brand">
+      <div class="brand-icon">K</div>
+      <div>
+        <div class="brand-name">Kermess POS</div>
+        <div class="brand-role">Cashier Station</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span class="conn-badge off" id="cashierStatus">
+        <span class="dot"></span> <span class="status-text">Waiting...</span>
       </span>
-      <button onclick="exportExcel()">Export Excel</button>
-      <button onclick="leavePage()">Leave</button>
+      <button class="topbar-btn" onclick="exportExcel()">Export Excel</button>
+      <button class="topbar-btn" onclick="leavePage()">Leave</button>
     </div>
   </div>
-  <div class="container">
-    <div class="name-section">
-      <label for="customerName">Customer Name</label>
-      <input type="text" id="customerName" placeholder="Enter name..." autocomplete="off">
-    </div>
-    <div class="section-title">Menu</div>
-    <div class="menu-grid" id="menuGrid"></div>
-    <div class="add-item-row">
-      <input id="newItemName" placeholder="New item name...">
-      <input id="newItemPrice" type="number" step="0.01" min="0" placeholder="Price">
-      <button onclick="addMenuItem()">+ Add</button>
-    </div>
-    <div class="cart-section">
-      <div class="section-title">Current Order</div>
-      <div id="cartList"></div>
-      <div class="cart-total" id="cartTotal" style="display:none">
-        <span>Total</span><span id="totalAmount">$0.00</span>
+  <div class="cashier-body">
+    <div class="menu-panel">
+      <div class="panel-title">Menu Items</div>
+      <div class="menu-grid" id="menuGrid"></div>
+      <div class="add-item-bar">
+        <input id="newItemName" placeholder="Item name...">
+        <input id="newItemPrice" type="number" step="0.01" min="0" placeholder="Price">
+        <button onclick="addMenuItem()">+ Add</button>
       </div>
-      <button class="send-btn" id="sendBtn" disabled onclick="sendOrder()">Send Order to Kitchen</button>
+    </div>
+    <div class="cart-panel">
+      <div class="cart-header">
+        <div class="panel-title">Current Order</div>
+        <input class="customer-input" type="text" id="customerName" placeholder="Customer name..." autocomplete="off">
+      </div>
+      <div class="cart-items" id="cartList"></div>
+      <div class="cart-footer" id="cartFooter" style="display:none">
+        <div class="cart-total-row">
+          <span>Total</span>
+          <span class="cart-total-amount" id="totalAmount">$0.00</span>
+        </div>
+        <button class="send-btn" id="sendBtn" onclick="sendOrder()">Send to Kitchen</button>
+        <div class="change-calc">
+          <div class="calc-title">Change Calculator</div>
+          <div class="currency-tabs">
+            <button class="currency-tab active" id="tab-usd" onclick="setCurrency('usd')">USD $</button>
+            <button class="currency-tab" id="tab-lbp" onclick="setCurrency('lbp')">LBP L.L.</button>
+          </div>
+          <div class="calc-input-row">
+            <label id="receivedLabel">Received $</label>
+            <input class="calc-input" type="number" id="receivedAmount" placeholder="0.00" oninput="calcChange()" min="0" step="0.01">
+          </div>
+          <div class="change-result zero" id="changeResult">
+            <span class="change-label">Change</span>
+            <span id="changeAmount">Enter amount received</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- ===== KITCHEN PAGE ===== -->
 <div class="kitchen-page page" id="kitchenPage">
-  <div class="header">
-    <h1>Kitchen Display</h1>
-    <div class="stats" id="kitchenStats"></div>
-    <div class="actions">
-      <span class="connection-status status-waiting" id="kitchenStatus">
-        <span class="dot"></span> <span class="status-text">Waiting for cashier...</span>
+  <div class="kitchen-topbar">
+    <div class="brand">
+      <div class="brand-icon">K</div>
+      <div>
+        <div class="brand-name">Kermess POS</div>
+        <div class="brand-role">Kitchen Display</div>
+      </div>
+    </div>
+    <span class="stats-badge" id="kitchenStats">0 pending</span>
+    <div class="kitchen-actions">
+      <span class="conn-badge off" id="kitchenStatus">
+        <span class="dot"></span> <span class="status-text">Waiting...</span>
       </span>
-      <button onclick="exportExcel()">Export Excel</button>
-      <button onclick="leavePage()">Leave</button>
+      <button class="kitchen-btn" onclick="exportExcel()">Export Excel</button>
+      <button class="kitchen-btn" onclick="leavePage()">Leave</button>
     </div>
   </div>
   <div class="filter-bar">
-    <button class="active" id="filter-active" onclick="setFilter('active')">Active</button>
-    <button id="filter-all" onclick="setFilter('all')">All Orders</button>
+    <button class="filter-btn active" id="filter-active" onclick="setFilter('active')">Active</button>
+    <button class="filter-btn" id="filter-all" onclick="setFilter('all')">All Orders</button>
   </div>
   <div class="orders-grid" id="ordersGrid"></div>
 </div>
@@ -300,14 +435,13 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ===== STATE =====
-let role = null;        // 'cashier' | 'kitchen'
-let roomCode = '';
+const ROOM = 'KERMESS-MAIN';
+let role = null;
 let peer = null;
-let conn = null;        // PeerJS DataConnection
+let conn = null;
 let menu = [];
-let orders = [];        // [{ id, customer_name, created_at, items: [{ id, item_name, price, done }] }]
-let cart = [];           // [{ name, price, qty }]
+let orders = [];
+let cart = [];
 let orderIdCounter = 1;
 let itemIdCounter = 1;
 let filter = 'active';
@@ -315,32 +449,26 @@ let connected = false;
 
 // ===== PERSISTENCE =====
 function saveState() {
-  const state = { menu, orders, orderIdCounter, itemIdCounter };
-  localStorage.setItem('kermess-pos-' + roomCode, JSON.stringify(state));
+  localStorage.setItem('kermess-pos-data', JSON.stringify({ menu, orders, orderIdCounter, itemIdCounter }));
 }
-
 function loadState() {
-  const raw = localStorage.getItem('kermess-pos-' + roomCode);
+  const raw = localStorage.getItem('kermess-pos-data');
   if (raw) {
     try {
-      const state = JSON.parse(raw);
-      menu = state.menu || getDefaultMenu();
-      orders = state.orders || [];
-      orderIdCounter = state.orderIdCounter || 1;
-      itemIdCounter = state.itemIdCounter || 1;
+      const s = JSON.parse(raw);
+      menu = s.menu || getDefaultMenu();
+      orders = s.orders || [];
+      orderIdCounter = s.orderIdCounter || 1;
+      itemIdCounter = s.itemIdCounter || 1;
     } catch { resetState(); }
-  } else {
-    resetState();
-  }
+  } else { resetState(); }
 }
-
 function resetState() {
   menu = getDefaultMenu();
   orders = [];
   orderIdCounter = 1;
   itemIdCounter = 1;
 }
-
 function getDefaultMenu() {
   return [
     { id: 1, name: 'Hotdog', price: 2.00 },
@@ -354,46 +482,27 @@ function getDefaultMenu() {
   ];
 }
 
-// ===== PEER COMMUNICATION =====
-function joinRoom(selectedRole) {
-  roomCode = document.getElementById('roomCode').value.trim().toUpperCase();
-  if (!roomCode) {
-    document.getElementById('landingError').textContent = 'Please enter a room code';
-    return;
-  }
+// ===== PEER =====
+function joinAs(selectedRole) {
   role = selectedRole;
   loadState();
-
-  // PeerJS IDs: cashier is "kermess-<code>-cashier", kitchen is "kermess-<code>-kitchen"
-  const myId = 'kermess-' + roomCode + '-' + role;
-  const otherId = 'kermess-' + roomCode + '-' + (role === 'cashier' ? 'kitchen' : 'cashier');
-
+  const myId = 'kermess-' + ROOM + '-' + role;
+  const otherId = 'kermess-' + ROOM + '-' + (role === 'cashier' ? 'kitchen' : 'cashier');
   peer = new Peer(myId);
-
   peer.on('open', () => {
-    // Show page
     document.getElementById('landingPage').classList.remove('active');
     document.getElementById(role === 'cashier' ? 'cashierPage' : 'kitchenPage').classList.add('active');
     render();
-
-    // Try to connect to the other device
     tryConnect(otherId);
   });
-
-  peer.on('connection', (c) => {
-    setupConnection(c);
-  });
-
+  peer.on('connection', (c) => setupConnection(c));
   peer.on('error', (err) => {
     if (err.type === 'unavailable-id') {
-      document.getElementById('landingError').textContent = 'This role is already taken in this room. Try the other role.';
+      alert('This station is already open. Close the other tab first.');
       if (peer) peer.destroy();
     } else if (err.type === 'peer-unavailable') {
-      // Other peer not online yet, keep waiting
       updateConnectionStatus(false);
       setTimeout(() => tryConnect(otherId), 3000);
-    } else {
-      console.error('Peer error:', err);
     }
   });
 }
@@ -402,9 +511,7 @@ function tryConnect(otherId) {
   if (connected) return;
   const c = peer.connect(otherId, { reliable: true });
   c.on('open', () => setupConnection(c));
-  c.on('error', () => {
-    setTimeout(() => tryConnect(otherId), 3000);
-  });
+  c.on('error', () => setTimeout(() => tryConnect(otherId), 3000));
 }
 
 function setupConnection(c) {
@@ -412,100 +519,62 @@ function setupConnection(c) {
   conn = c;
   connected = true;
   updateConnectionStatus(true);
-
-  // Sync: send full state to the other side
   sendMsg({ type: 'sync', menu, orders, orderIdCounter, itemIdCounter });
-
-  conn.on('data', (msg) => handleMessage(msg));
+  conn.on('data', handleMessage);
   conn.on('close', () => {
     connected = false;
     updateConnectionStatus(false);
-    // Try to reconnect
-    const otherId = 'kermess-' + roomCode + '-' + (role === 'cashier' ? 'kitchen' : 'cashier');
+    const otherId = 'kermess-' + ROOM + '-' + (role === 'cashier' ? 'kitchen' : 'cashier');
     setTimeout(() => tryConnect(otherId), 2000);
   });
 }
 
-function sendMsg(msg) {
-  if (conn && conn.open) {
-    conn.send(msg);
-  }
-}
+function sendMsg(msg) { if (conn && conn.open) conn.send(msg); }
 
 function handleMessage(msg) {
   switch (msg.type) {
     case 'sync':
-      // Merge: take the data with more orders (simple conflict resolution)
       if (msg.orders.length >= orders.length) {
         orders = msg.orders;
         orderIdCounter = Math.max(orderIdCounter, msg.orderIdCounter);
         itemIdCounter = Math.max(itemIdCounter, msg.itemIdCounter);
       }
-      if (msg.menu.length > 0) {
-        menu = msg.menu;
-      }
-      saveState();
-      render();
-      break;
+      if (msg.menu.length > 0) menu = msg.menu;
+      saveState(); render(); break;
     case 'new-order':
       orders.unshift(msg.order);
       orderIdCounter = Math.max(orderIdCounter, msg.order.id + 1);
-      for (const item of msg.order.items) {
-        itemIdCounter = Math.max(itemIdCounter, item.id + 1);
-      }
-      saveState();
-      render();
+      for (const it of msg.order.items) itemIdCounter = Math.max(itemIdCounter, it.id + 1);
+      saveState(); render();
       if (role === 'kitchen') {
         playBeep();
-        setTimeout(() => {
-          const card = document.querySelector(`[data-order-id="${msg.order.id}"]`);
-          if (card) card.classList.add('new');
-        }, 50);
+        setTimeout(() => { const c = document.querySelector(`[data-oid="${msg.order.id}"]`); if (c) c.classList.add('new'); }, 50);
       }
       break;
     case 'item-done':
-      for (const order of orders) {
-        for (const item of order.items) {
-          if (item.id === msg.itemId) item.done = true;
-        }
-      }
-      saveState();
-      render();
-      break;
+      for (const o of orders) for (const it of o.items) if (it.id === msg.itemId) it.done = true;
+      saveState(); render(); break;
     case 'menu-add':
-      menu.push(msg.item);
-      saveState();
-      render();
-      break;
+      menu.push(msg.item); saveState(); render(); break;
     case 'menu-delete':
-      menu = menu.filter(m => m.id !== msg.id);
-      saveState();
-      render();
-      break;
+      menu = menu.filter(m => m.id !== msg.id); saveState(); render(); break;
   }
 }
 
-function updateConnectionStatus(isConnected) {
-  const statusId = role === 'cashier' ? 'cashierStatus' : 'kitchenStatus';
-  const el = document.getElementById(statusId);
-  const otherRole = role === 'cashier' ? 'kitchen' : 'cashier';
-  if (isConnected) {
-    el.className = 'connection-status status-connected';
-    el.querySelector('.status-text').textContent = otherRole.charAt(0).toUpperCase() + otherRole.slice(1) + ' connected';
-  } else {
-    el.className = 'connection-status status-waiting';
-    el.querySelector('.status-text').textContent = 'Waiting for ' + otherRole + '...';
-  }
+function updateConnectionStatus(on) {
+  const el = document.getElementById(role === 'cashier' ? 'cashierStatus' : 'kitchenStatus');
+  const other = role === 'cashier' ? 'Kitchen' : 'Cashier';
+  el.className = 'conn-badge ' + (on ? 'on' : 'off');
+  el.querySelector('.status-text').textContent = on ? other + ' connected' : 'Waiting...';
 }
 
-// ===== CASHIER FUNCTIONS =====
+// ===== CASHIER =====
 function renderMenu() {
-  const grid = document.getElementById('menuGrid');
-  grid.innerHTML = menu.map(item => `
+  document.getElementById('menuGrid').innerHTML = menu.map(item => `
     <div class="menu-item" onclick="addToCart('${esc(item.name)}', ${item.price})">
-      <button class="del" onclick="event.stopPropagation(); deleteMenuItem(${item.id})" title="Remove">&times;</button>
-      <div class="name">${escHtml(item.name)}</div>
-      <div class="price">$${item.price.toFixed(2)}</div>
+      <button class="m-del" onclick="event.stopPropagation(); deleteMenuItem(${item.id})" title="Remove">&times;</button>
+      <div class="m-name">${escHtml(item.name)}</div>
+      <div class="m-price">$${item.price.toFixed(2)}</div>
     </div>
   `).join('');
 }
@@ -514,28 +583,22 @@ function addMenuItem() {
   const name = document.getElementById('newItemName').value.trim();
   const price = parseFloat(document.getElementById('newItemPrice').value);
   if (!name || isNaN(price) || price < 0) return;
-  const id = Date.now();
-  const item = { id, name, price };
-  menu.push(item);
-  saveState();
-  renderMenu();
+  const item = { id: Date.now(), name, price };
+  menu.push(item); saveState(); renderMenu();
   sendMsg({ type: 'menu-add', item });
   document.getElementById('newItemName').value = '';
   document.getElementById('newItemPrice').value = '';
 }
 
 function deleteMenuItem(id) {
-  if (!confirm('Remove this item from the menu?')) return;
-  menu = menu.filter(m => m.id !== id);
-  saveState();
-  renderMenu();
+  if (!confirm('Remove this item?')) return;
+  menu = menu.filter(m => m.id !== id); saveState(); renderMenu();
   sendMsg({ type: 'menu-delete', id });
 }
 
 function addToCart(name, price) {
-  const existing = cart.find(c => c.name === name);
-  if (existing) existing.qty++;
-  else cart.push({ name, price, qty: 1 });
+  const ex = cart.find(c => c.name === name);
+  if (ex) ex.qty++; else cart.push({ name, price, qty: 1, comment: '' });
   renderCart();
 }
 
@@ -547,83 +610,114 @@ function changeQty(name, delta) {
   renderCart();
 }
 
+function updateComment(name, comment) {
+  const item = cart.find(c => c.name === name);
+  if (item) item.comment = comment;
+}
+
 function renderCart() {
   const list = document.getElementById('cartList');
-  const totalDiv = document.getElementById('cartTotal');
-  const sendBtn = document.getElementById('sendBtn');
+  const footer = document.getElementById('cartFooter');
   if (cart.length === 0) {
-    list.innerHTML = '<div class="cart-empty">Tap menu items to add them</div>';
-    totalDiv.style.display = 'none';
-    sendBtn.disabled = true;
+    list.innerHTML = '<div class="cart-empty">Tap menu items to add them to the order</div>';
+    footer.style.display = 'none';
     return;
   }
   list.innerHTML = cart.map(item => `
     <div class="cart-item">
-      <div class="info">
-        <div class="qty-controls">
-          <button onclick="changeQty('${esc(item.name)}', -1)">&minus;</button>
-          <span class="qty">${item.qty}</span>
-          <button onclick="changeQty('${esc(item.name)}', 1)">+</button>
+      <div class="cart-item-top">
+        <div class="info">
+          <div class="qty-controls">
+            <button onclick="changeQty('${esc(item.name)}', -1)">&minus;</button>
+            <span class="qty">${item.qty}</span>
+            <button onclick="changeQty('${esc(item.name)}', 1)">+</button>
+          </div>
+          <span class="cart-item-name">${escHtml(item.name)}</span>
         </div>
-        <span>${escHtml(item.name)}</span>
+        <span class="item-total">$${(item.price * item.qty).toFixed(2)}</span>
       </div>
-      <span class="item-total">$${(item.price * item.qty).toFixed(2)}</span>
+      <input class="comment-input" type="text" placeholder="Add a note..."
+        value="${escAttr(item.comment)}"
+        onchange="updateComment('${esc(item.name)}', this.value)">
     </div>
   `).join('');
   const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
   document.getElementById('totalAmount').textContent = '$' + total.toFixed(2);
-  totalDiv.style.display = 'flex';
-  sendBtn.disabled = false;
+  footer.style.display = 'block';
 }
 
 function sendOrder() {
   const name = document.getElementById('customerName').value.trim();
-  if (!name) {
-    document.getElementById('customerName').focus();
-    showToast('Please enter a customer name', '#ef4444');
-    return;
-  }
+  if (!name) { document.getElementById('customerName').focus(); showToast('Enter a customer name', '#ef4444'); return; }
   if (cart.length === 0) return;
-
   const orderId = orderIdCounter++;
   const items = [];
-  for (const c of cart) {
-    for (let i = 0; i < c.qty; i++) {
-      items.push({ id: itemIdCounter++, item_name: c.name, price: c.price, done: false });
-    }
-  }
-
-  const order = {
-    id: orderId,
-    customer_name: name,
-    created_at: new Date().toISOString(),
-    items,
-  };
-
-  orders.unshift(order);
-  saveState();
+  for (const c of cart)
+    for (let i = 0; i < c.qty; i++)
+      items.push({ id: itemIdCounter++, item_name: c.name, price: c.price, done: false, comment: c.comment || '' });
+  const order = { id: orderId, customer_name: name, created_at: new Date().toISOString(), items };
+  orders.unshift(order); saveState();
   sendMsg({ type: 'new-order', order });
-
   cart = [];
   document.getElementById('customerName').value = '';
   renderCart();
   showToast('Order sent!');
 }
 
-// ===== KITCHEN FUNCTIONS =====
+// ===== CHANGE CALCULATOR =====
+const LBP_RATE = 90000;
+let currency = 'usd';
+
+function setCurrency(c) {
+  currency = c;
+  document.getElementById('tab-usd').className = 'currency-tab' + (c === 'usd' ? ' active' : '');
+  document.getElementById('tab-lbp').className = 'currency-tab' + (c === 'lbp' ? ' active' : '');
+  document.getElementById('receivedLabel').textContent = c === 'usd' ? 'Received $' : 'Received L.L.';
+  document.getElementById('receivedAmount').value = '';
+  calcChange();
+}
+
+function calcChange() {
+  const totalUSD = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const received = parseFloat(document.getElementById('receivedAmount').value) || 0;
+  const el = document.getElementById('changeResult');
+  const amt = document.getElementById('changeAmount');
+
+  if (received === 0) {
+    el.className = 'change-result zero';
+    amt.textContent = 'Enter amount received';
+    return;
+  }
+
+  let receivedUSD = currency === 'usd' ? received : received / LBP_RATE;
+  let changeUSD = receivedUSD - totalUSD;
+
+  if (changeUSD >= 0) {
+    el.className = 'change-result positive';
+    const changeLBP = changeUSD * LBP_RATE;
+    amt.textContent = `$${changeUSD.toFixed(2)} / ${formatLBP(changeLBP)} L.L.`;
+  } else {
+    el.className = 'change-result negative';
+    const stillOwed = Math.abs(changeUSD);
+    const owedLBP = stillOwed * LBP_RATE;
+    amt.textContent = `Still owed: $${stillOwed.toFixed(2)} / ${formatLBP(owedLBP)} L.L.`;
+  }
+}
+
+function formatLBP(amount) {
+  return Math.round(amount).toLocaleString();
+}
+
+// ===== KITCHEN =====
 function setFilter(f) {
   filter = f;
-  document.querySelectorAll('.filter-bar button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('filter-' + f).classList.add('active');
   renderKitchen();
 }
 
 function markDone(itemId) {
-  for (const order of orders) {
-    for (const item of order.items) {
-      if (item.id === itemId) item.done = true;
-    }
-  }
+  for (const o of orders) for (const it of o.items) if (it.id === itemId) it.done = true;
   saveState();
   sendMsg({ type: 'item-done', itemId });
   renderKitchen();
@@ -631,33 +725,29 @@ function markDone(itemId) {
 
 function renderKitchen() {
   const grid = document.getElementById('ordersGrid');
-  const stats = document.getElementById('kitchenStats');
   const totalPending = orders.reduce((s, o) => s + o.items.filter(i => !i.done).length, 0);
-  stats.textContent = totalPending + ' pending items';
-
-  let filtered = orders;
-  if (filter === 'active') {
-    filtered = orders.filter(o => o.items.some(i => !i.done));
-  }
-
+  document.getElementById('kitchenStats').textContent = totalPending + ' pending';
+  let filtered = filter === 'active' ? orders.filter(o => o.items.some(i => !i.done)) : orders;
   if (filtered.length === 0) {
-    grid.innerHTML = `<div class="empty-state"><h2>${filter === 'active' ? 'No active orders' : 'No orders yet'}</h2><p>Orders appear here when placed</p></div>`;
+    grid.innerHTML = `<div class="empty-state"><h2>${filter === 'active' ? 'No active orders' : 'No orders yet'}</h2><p>Orders appear here when placed from the cashier</p></div>`;
     return;
   }
-
   grid.innerHTML = filtered.map(order => {
     const allDone = order.items.every(i => i.done);
     const time = new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     return `
-      <div class="order-card ${allDone ? 'all-done' : ''}" data-order-id="${order.id}">
+      <div class="order-card ${allDone ? 'all-done' : ''}" data-oid="${order.id}">
         <div class="order-header">
           <div><div class="customer-name">${escHtml(order.customer_name)}</div><div class="order-id">#${order.id}</div></div>
-          <div class="order-time">${time}</div>
+          <div class="order-meta"><div class="order-time">${time}</div></div>
         </div>
         <div class="order-items-list">
           ${order.items.map(item => `
             <div class="order-item-row ${item.done ? 'done' : ''}">
-              <span class="oitem-name">${escHtml(item.item_name)}</span>
+              <div>
+                <div class="oitem-name">${escHtml(item.item_name)}</div>
+                ${item.comment ? `<div class="oitem-comment">${escHtml(item.comment)}</div>` : ''}
+              </div>
               <button class="done-btn ${item.done ? 'completed' : 'pending'}"
                 ${item.done ? 'disabled' : `onclick="markDone(${item.id})"`}>
                 ${item.done ? 'Done' : 'Mark Done'}
@@ -665,29 +755,21 @@ function renderKitchen() {
             </div>
           `).join('')}
         </div>
-      </div>
-    `;
+      </div>`;
   }).join('');
 }
 
-// ===== EXCEL EXPORT =====
+// ===== EXCEL =====
 function exportExcel() {
-  const salesMap = {};
-  for (const order of orders) {
-    for (const item of order.items) {
-      if (!salesMap[item.item_name]) {
-        salesMap[item.item_name] = { item: item.item_name, quantity: 0, total: 0 };
-      }
-      salesMap[item.item_name].quantity++;
-      salesMap[item.item_name].total += item.price;
-    }
+  const m = {};
+  for (const o of orders) for (const it of o.items) {
+    if (!m[it.item_name]) m[it.item_name] = { item: it.item_name, quantity: 0, total: 0 };
+    m[it.item_name].quantity++; m[it.item_name].total += it.price;
   }
-
-  const rows = Object.values(salesMap).sort((a, b) => b.quantity - a.quantity);
-  const totalQty = rows.reduce((s, r) => s + r.quantity, 0);
-  const totalRev = rows.reduce((s, r) => s + r.total, 0);
-  rows.push({ item: 'TOTAL', quantity: totalQty, total: totalRev });
-
+  const rows = Object.values(m).sort((a, b) => b.quantity - a.quantity);
+  const tq = rows.reduce((s, r) => s + r.quantity, 0);
+  const tr = rows.reduce((s, r) => s + r.total, 0);
+  rows.push({ item: 'TOTAL', quantity: tq, total: tr });
   const wsData = [['Item', 'Quantity Sold', 'Total Revenue'], ...rows.map(r => [r.item, r.quantity, '$' + r.total.toFixed(2)])];
   const ws = XLSX.utils.aoa_to_sheet(wsData);
   ws['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 15 }];
@@ -702,48 +784,34 @@ function render() {
   if (role === 'cashier') { renderMenu(); renderCart(); }
   else if (role === 'kitchen') { renderKitchen(); }
 }
-
 function leavePage() {
   if (peer) peer.destroy();
-  connected = false;
-  conn = null;
-  peer = null;
-  role = null;
-  cart = [];
+  connected = false; conn = null; peer = null; role = null; cart = [];
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('landingPage').classList.add('active');
 }
-
-function showToast(msg, color = '#10b981') {
+function showToast(msg, color = '#22c55e') {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.style.background = color;
+  t.textContent = msg; t.style.background = color;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2000);
 }
-
 function playBeep() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
-    osc.frequency.value = 800; gain.gain.value = 0.3;
-    osc.start(); osc.stop(ctx.currentTime + 0.2);
+    osc.frequency.value = 880; gain.gain.value = 0.25;
+    osc.start(); osc.stop(ctx.currentTime + 0.15);
   } catch {}
 }
+function esc(s) { return s.replace(/'/g, "\\'"); }
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function escAttr(s) { return s.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
-function esc(str) { return str.replace(/'/g, "\\'"); }
-function escHtml(str) {
-  const d = document.createElement('div');
-  d.textContent = str;
-  return d.innerHTML;
-}
-
-// Auto-reconnect loop
 setInterval(() => {
-  if (peer && !connected && roomCode) {
-    const otherId = 'kermess-' + roomCode + '-' + (role === 'cashier' ? 'kitchen' : 'cashier');
+  if (peer && !connected) {
+    const otherId = 'kermess-' + ROOM + '-' + (role === 'cashier' ? 'kitchen' : 'cashier');
     tryConnect(otherId);
   }
 }, 5000);
