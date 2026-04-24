@@ -302,6 +302,19 @@
     .order-meta { text-align: right; }
     .order-time { font-size: 0.8rem; color: #555; font-weight: 500; }
     .order-id { font-size: 0.7rem; color: #444; }
+    .order-timer {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 6px; font-size: 0.78rem;
+      font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums;
+    }
+    .order-timer .timer-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .timer-green { background: rgba(34,197,94,0.12); color: #22c55e; }
+    .timer-green .timer-dot { background: #22c55e; }
+    .timer-yellow { background: rgba(250,204,21,0.12); color: #facc15; }
+    .timer-yellow .timer-dot { background: #facc15; }
+    .timer-red { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .timer-red .timer-dot { background: #ef4444; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
     .order-items-list { padding: 8px 18px 14px; }
     .order-item-row {
       display: flex; justify-content: space-between; align-items: center;
@@ -768,6 +781,17 @@ function formatLBP(amount) {
 }
 
 // ===== KITCHEN =====
+function getElapsed(createdAt) {
+  const diff = Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000);
+  const mins = Math.floor(diff / 60);
+  const secs = diff % 60;
+  const text = mins > 0 ? `${mins}m ${secs.toString().padStart(2, '0')}s` : `${secs}s`;
+  let cls = 'timer-green';
+  if (mins >= 10) cls = 'timer-red';
+  else if (mins >= 5) cls = 'timer-yellow';
+  return { text, cls };
+}
+
 function setFilter(f) {
   filter = f;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -794,11 +818,18 @@ function renderKitchen() {
   grid.innerHTML = filtered.map(order => {
     const allDone = order.items.every(i => i.done);
     const time = new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const elapsed = getElapsed(order.created_at);
+    const timerClass = allDone ? 'timer-green' : elapsed.cls;
     return `
       <div class="order-card ${allDone ? 'all-done' : ''}" data-oid="${order.id}">
         <div class="order-header">
           <div><div class="customer-name">${escHtml(order.customer_name)}</div><div class="order-id">#${order.id}</div></div>
-          <div class="order-meta"><div class="order-time">${time}</div></div>
+          <div class="order-meta">
+            <div class="order-time">${time}</div>
+            <div class="order-timer ${timerClass}">
+              <span class="timer-dot"></span> ${allDone ? 'Completed' : elapsed.text}
+            </div>
+          </div>
         </div>
         <div class="order-items-list">
           ${order.items.map(item => `
@@ -874,6 +905,11 @@ setInterval(() => {
     tryConnect(otherId);
   }
 }, 5000);
+
+// Live timer refresh for kitchen
+setInterval(() => {
+  if (role === 'kitchen') renderKitchen();
+}, 1000);
 </script>
 </body>
 </html>
