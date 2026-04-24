@@ -212,15 +212,34 @@
       background: transparent; color: #888; transition: all 0.15s;
     }
     .currency-tab.active { background: #fff; color: #1a1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    .calc-input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
-    .calc-input-row label { font-size: 0.82rem; font-weight: 600; color: #666; white-space: nowrap; }
-    .calc-input {
-      flex: 1; padding: 9px 12px; border: 1.5px solid #e5e5e5; border-radius: 8px;
-      font-size: 0.95rem; font-weight: 600; outline: none; font-family: inherit;
+    .calc-display {
+      background: #fff; border: 1.5px solid #e5e5e5; border-radius: 10px;
+      padding: 12px 16px; margin-bottom: 10px; text-align: right;
+      font-size: 1.6rem; font-weight: 800; color: #1a1a1a; min-height: 52px;
+      display: flex; align-items: center; justify-content: space-between;
     }
-    .calc-input:focus { border-color: #6366f1; }
+    .calc-display .calc-label { font-size: 0.75rem; font-weight: 600; color: #999; }
+    .numpad {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px;
+    }
+    .numpad button {
+      padding: 14px; border: 1.5px solid #e5e5e5; border-radius: 10px;
+      background: #fff; font-size: 1.15rem; font-weight: 700; cursor: pointer;
+      font-family: inherit; color: #1a1a1a; transition: all 0.1s;
+      -webkit-tap-highlight-color: transparent; user-select: none;
+    }
+    .numpad button:hover { background: #f5f5f7; }
+    .numpad button:active { background: #e5e7eb; transform: scale(0.96); }
+    .numpad .num-clear {
+      background: #fef2f2; color: #ef4444; border-color: #fecaca;
+    }
+    .numpad .num-clear:hover { background: #fee2e2; }
+    .numpad .num-back {
+      background: #f5f5f7; color: #666; border-color: #e5e5e5;
+    }
+    .numpad .num-dot { font-size: 1.4rem; }
     .change-result {
-      padding: 10px 14px; border-radius: 10px; text-align: center;
+      padding: 12px 14px; border-radius: 10px; text-align: center;
       font-weight: 800; font-size: 1.05rem;
     }
     .change-result.positive { background: #f0fdf4; color: #16a34a; }
@@ -392,10 +411,25 @@
             <button class="currency-tab active" id="tab-usd" onclick="setCurrency('usd')">USD $</button>
             <button class="currency-tab" id="tab-lbp" onclick="setCurrency('lbp')">LBP L.L.</button>
           </div>
-          <div class="calc-input-row">
-            <label id="receivedLabel">Received $</label>
-            <input class="calc-input" type="number" id="receivedAmount" placeholder="0.00" oninput="calcChange()" min="0" step="0.01">
+          <div class="calc-display">
+            <span class="calc-label" id="receivedLabel">Received $</span>
+            <span id="receivedDisplay">0</span>
           </div>
+          <div class="numpad">
+            <button onclick="numPress('1')">1</button>
+            <button onclick="numPress('2')">2</button>
+            <button onclick="numPress('3')">3</button>
+            <button onclick="numPress('4')">4</button>
+            <button onclick="numPress('5')">5</button>
+            <button onclick="numPress('6')">6</button>
+            <button onclick="numPress('7')">7</button>
+            <button onclick="numPress('8')">8</button>
+            <button onclick="numPress('9')">9</button>
+            <button class="num-dot" onclick="numPress('.')">.</button>
+            <button onclick="numPress('0')">0</button>
+            <button class="num-back" onclick="numBack()">&#9003;</button>
+          </div>
+          <button class="num-clear-btn" onclick="numClear()" style="width:100%;padding:8px;border:1.5px solid #fecaca;border-radius:8px;background:#fef2f2;color:#ef4444;font-weight:700;font-size:0.85rem;cursor:pointer;font-family:inherit;margin-bottom:10px;">Clear</button>
           <div class="change-result zero" id="changeResult">
             <span class="change-label">Change</span>
             <span id="changeAmount">Enter amount received</span>
@@ -659,6 +693,7 @@ function sendOrder() {
   orders.unshift(order); saveState();
   sendMsg({ type: 'new-order', order });
   cart = [];
+  numClear();
   document.getElementById('customerName').value = '';
   renderCart();
   showToast('Order sent!');
@@ -667,19 +702,43 @@ function sendOrder() {
 // ===== CHANGE CALCULATOR =====
 const LBP_RATE = 90000;
 let currency = 'usd';
+let numpadValue = '';
 
 function setCurrency(c) {
   currency = c;
   document.getElementById('tab-usd').className = 'currency-tab' + (c === 'usd' ? ' active' : '');
   document.getElementById('tab-lbp').className = 'currency-tab' + (c === 'lbp' ? ' active' : '');
   document.getElementById('receivedLabel').textContent = c === 'usd' ? 'Received $' : 'Received L.L.';
-  document.getElementById('receivedAmount').value = '';
+  numClear();
+}
+
+function numPress(key) {
+  if (key === '.' && numpadValue.includes('.')) return;
+  if (key === '.' && numpadValue === '') { numpadValue = '0'; }
+  // Limit decimals to 2 for USD
+  if (numpadValue.includes('.') && numpadValue.split('.')[1].length >= 2 && currency === 'usd') return;
+  numpadValue += key;
+  updateCalcDisplay();
+}
+
+function numBack() {
+  numpadValue = numpadValue.slice(0, -1);
+  updateCalcDisplay();
+}
+
+function numClear() {
+  numpadValue = '';
+  updateCalcDisplay();
+}
+
+function updateCalcDisplay() {
+  document.getElementById('receivedDisplay').textContent = numpadValue || '0';
   calcChange();
 }
 
 function calcChange() {
   const totalUSD = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const received = parseFloat(document.getElementById('receivedAmount').value) || 0;
+  const received = parseFloat(numpadValue) || 0;
   const el = document.getElementById('changeResult');
   const amt = document.getElementById('changeAmount');
 
