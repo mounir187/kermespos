@@ -26,9 +26,12 @@
     .landing h1 { font-size: 2.4rem; font-weight: 900; letter-spacing: -1px; margin-bottom: 6px; }
     .landing h1 span { background: linear-gradient(135deg, #6366f1, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .landing .subtitle { color: #666; margin-bottom: 48px; font-size: 1rem; font-weight: 500; }
-    .role-cards { display: flex; gap: 20px; max-width: 860px; width: 100%; flex-wrap: wrap; }
+    .role-cards {
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 20px; max-width: 980px; width: 100%;
+    }
     .role-card {
-      flex: 1; padding: 32px 24px; border-radius: 16px; cursor: pointer;
+      padding: 28px 20px; border-radius: 16px; cursor: pointer;
       transition: all 0.25s ease; text-align: center; border: 1px solid #1a1a2e; background: #111118;
     }
     .role-card:hover { transform: translateY(-4px); }
@@ -523,7 +526,7 @@
 
     /* Mobile */
     @media (max-width: 768px) {
-      .role-cards { flex-direction: column; }
+      .role-cards { grid-template-columns: 1fr; }
       .cashier-body { flex-direction: column; }
       .order-panel { width: 100%; min-width: 0; border-left: none; border-top: 1px solid var(--border); max-height: none; }
       .menu-panel { max-height: none; padding: 14px; }
