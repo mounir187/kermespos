@@ -26,7 +26,7 @@
     .landing h1 { font-size: 2.4rem; font-weight: 900; letter-spacing: -1px; margin-bottom: 6px; }
     .landing h1 span { background: linear-gradient(135deg, #6366f1, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .landing .subtitle { color: #666; margin-bottom: 48px; font-size: 1rem; font-weight: 500; }
-    .role-cards { display: flex; gap: 20px; max-width: 560px; width: 100%; }
+    .role-cards { display: flex; gap: 20px; max-width: 860px; width: 100%; flex-wrap: wrap; }
     .role-card {
       flex: 1; padding: 32px 24px; border-radius: 16px; cursor: pointer;
       transition: all 0.25s ease; text-align: center; border: 1px solid #1a1a2e; background: #111118;
@@ -34,12 +34,14 @@
     .role-card:hover { transform: translateY(-4px); }
     .role-card.cashier-card:hover { border-color: #6366f1; box-shadow: 0 8px 40px rgba(99,102,241,0.2); }
     .role-card.kitchen-card:hover { border-color: #f97316; box-shadow: 0 8px 40px rgba(249,115,22,0.2); }
+    .role-card.games-card:hover { border-color: #14b8a6; box-shadow: 0 8px 40px rgba(20,184,166,0.2); }
     .role-card .role-icon {
       width: 56px; height: 56px; border-radius: 14px; margin: 0 auto 16px;
       display: flex; align-items: center; justify-content: center; font-size: 1.6rem;
     }
     .cashier-card .role-icon { background: rgba(99,102,241,0.15); }
     .kitchen-card .role-icon { background: rgba(249,115,22,0.15); }
+    .games-card .role-icon { background: rgba(20,184,166,0.15); }
     .role-card .role-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 6px; }
     .role-card .role-desc { font-size: 0.82rem; color: #666; line-height: 1.4; }
 
@@ -179,6 +181,14 @@
       font-weight: 700; font-family: inherit; transition: all 0.15s;
     }
     .add-item-topbtn:hover { background: var(--accent-hover); }
+    .import-menu-label {
+      padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text-mid); cursor: pointer; font-size: 0.8rem;
+      font-weight: 600; font-family: inherit; transition: all 0.15s;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .import-menu-label:hover { border-color: var(--accent); color: var(--accent); }
+    .import-menu-input { display: none; }
 
     /* Right: Order Panel */
     .order-panel {
@@ -383,6 +393,125 @@
     @keyframes flash { 0%,100%{border-color:#27272a} 50%{border-color:#f97316} }
     .order-card.new { animation: flash 0.5s ease 3; }
 
+    /* ===== GAMES PAGE ===== */
+    .games-page {
+      --bg: #f3f6f7; --card: #fff; --border: #dbe4e7; --border-light: #e8eef0;
+      --text: #102127; --text-dim: #6b7d85; --text-mid: #41545c; --input-bg: #f9fbfb;
+      --accent: #14b8a6; --accent-hover: #0f988a;
+      background: var(--bg); color: var(--text); flex-direction: column;
+    }
+    .games-topbar {
+      background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .games-topbar .brand { display: flex; align-items: center; gap: 10px; }
+    .games-topbar .brand-icon {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: linear-gradient(135deg, #14b8a6, #0f766e);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 0.85rem; color: #fff;
+    }
+    .games-topbar .brand-name { font-weight: 800; font-size: 1rem; color: var(--text); }
+    .games-topbar .brand-role { font-size: 0.75rem; color: var(--text-dim); font-weight: 500; }
+    .games-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .games-btn {
+      padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text-mid); cursor: pointer; font-size: 0.82rem;
+      font-weight: 600; font-family: inherit; transition: all 0.15s; text-decoration: none;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .games-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .games-body {
+      display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); gap: 18px;
+      padding: 18px; align-items: start;
+    }
+    .games-panel {
+      background: var(--card); border: 1px solid var(--border-light); border-radius: 14px; padding: 18px;
+    }
+    .games-panel-title {
+      font-size: 0.8rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase;
+      letter-spacing: 1px; margin-bottom: 12px;
+    }
+    .games-help { color: var(--text-dim); font-size: 0.85rem; line-height: 1.5; }
+    .games-items-list {
+      display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 190px); overflow-y: auto;
+    }
+    .games-item {
+      width: 100%; border: 1px solid var(--border); background: var(--input-bg); border-radius: 10px;
+      padding: 12px 14px; text-align: left; cursor: pointer; font-family: inherit;
+      color: var(--text); transition: all 0.15s;
+    }
+    .games-item:hover { border-color: var(--accent); background: #f2fffd; }
+    .games-item.active {
+      border-color: var(--accent); background: rgba(20,184,166,0.08);
+      box-shadow: 0 4px 16px rgba(20,184,166,0.12);
+    }
+    .games-item-name { font-weight: 700; font-size: 0.95rem; }
+    .games-item-meta { font-size: 0.78rem; color: var(--text-dim); margin-top: 4px; }
+    .games-item-row {
+      display: flex; gap: 8px; align-items: flex-start;
+    }
+    .games-item-row .games-item { flex: 1; }
+    .games-item-delete {
+      width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--card); color: #ef4444; cursor: pointer; font-weight: 800; font-family: inherit;
+      flex: 0 0 auto;
+    }
+    .games-item-delete:hover { border-color: #ef4444; background: #fff5f5; }
+    .games-add-grid {
+      display: grid; grid-template-columns: minmax(0, 1fr) 120px auto; gap: 8px; margin-bottom: 14px;
+    }
+    .games-add-grid input {
+      width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 10px;
+      background: var(--input-bg); color: var(--text); font-size: 0.9rem; outline: none; font-family: inherit;
+    }
+    .games-add-grid input:focus { border-color: var(--accent); }
+    .games-add-btn {
+      border: none; border-radius: 10px; background: var(--accent); color: #fff; cursor: pointer;
+      padding: 10px 14px; font-weight: 800; font-family: inherit;
+    }
+    .games-add-btn:hover { background: var(--accent-hover); }
+    .games-form-grid {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
+    }
+    .games-field { margin-bottom: 12px; }
+    .games-field.full { grid-column: 1 / -1; }
+    .games-field label {
+      display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-dim); margin-bottom: 6px;
+    }
+    .games-field input {
+      width: 100%; padding: 11px 13px; border: 1.5px solid var(--border); border-radius: 10px;
+      background: var(--input-bg); color: var(--text); font-size: 0.92rem; outline: none; font-family: inherit;
+    }
+    .games-field input:focus { border-color: var(--accent); }
+    .games-selected {
+      padding: 12px 14px; border-radius: 10px; background: var(--input-bg); border: 1px solid var(--border);
+      font-weight: 700; margin-bottom: 14px;
+    }
+    .games-submit {
+      width: 100%; padding: 13px; border: none; border-radius: 12px;
+      background: linear-gradient(135deg, #14b8a6, #0f766e); color: #fff; cursor: pointer;
+      font-weight: 800; font-size: 0.95rem; font-family: inherit; transition: all 0.15s;
+      box-shadow: 0 8px 24px rgba(20,184,166,0.22);
+    }
+    .games-submit:hover { transform: translateY(-1px); }
+    .games-submit:disabled { background: #cbd5d8; box-shadow: none; cursor: not-allowed; transform: none; }
+    .games-records {
+      margin-top: 18px; border-top: 1px solid var(--border-light); padding-top: 18px;
+    }
+    .games-record-list { display: flex; flex-direction: column; gap: 10px; }
+    .games-record {
+      border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; background: var(--input-bg);
+    }
+    .games-record-top {
+      display: flex; justify-content: space-between; gap: 12px; align-items: baseline; margin-bottom: 6px;
+    }
+    .games-record-item { font-weight: 800; font-size: 0.92rem; }
+    .games-record-time { font-size: 0.76rem; color: var(--text-dim); }
+    .games-record-client { font-weight: 600; margin-bottom: 4px; }
+    .games-record-meta { font-size: 0.82rem; color: var(--text-mid); line-height: 1.45; }
+
     /* Toast */
     .toast {
       position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
@@ -398,6 +527,9 @@
       .cashier-body { flex-direction: column; }
       .order-panel { width: 100%; min-width: 0; border-left: none; border-top: 1px solid var(--border); max-height: none; }
       .menu-panel { max-height: none; padding: 14px; }
+      .games-body { grid-template-columns: 1fr; padding: 14px; }
+      .games-items-list { max-height: none; }
+      .games-form-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -418,6 +550,11 @@
       <div class="role-icon">&#127859;</div>
       <div class="role-title">Kitchen</div>
       <div class="role-desc">View incoming orders and mark items as completed</div>
+    </div>
+    <div class="role-card games-card" onclick="joinAs('games')">
+      <div class="role-icon">&#127918;</div>
+      <div class="role-title">Games</div>
+      <div class="role-desc">Import game items, register purchases, and export client data</div>
     </div>
   </div>
 </div>
@@ -446,7 +583,11 @@
     <div class="menu-panel">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
         <div class="panel-title" style="margin-bottom:0">Menu Items</div>
-        <button class="add-item-topbtn" onclick="openAddModal()">+ Add Item</button>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <label class="import-menu-label" for="menuExcelInput">Import Excel</label>
+          <input class="import-menu-input" id="menuExcelInput" type="file" accept=".xlsx,.xls,.csv" onchange="importMenuExcel(event)">
+          <button class="add-item-topbtn" onclick="openAddModal()">+ Add Item</button>
+        </div>
       </div>
       <div class="cat-tabs" id="catTabs"></div>
       <div class="menu-grid" id="menuGrid"></div>
@@ -546,20 +687,85 @@
   <div class="orders-grid" id="ordersGrid"></div>
 </div>
 
+<!-- ===== GAMES ===== -->
+<div class="games-page page" id="gamesPage">
+  <div class="games-topbar">
+    <div class="brand">
+      <div class="brand-icon">G</div>
+      <div>
+        <div class="brand-name">Kermess POS</div>
+        <div class="brand-role">Games Data Entry</div>
+      </div>
+    </div>
+    <div class="games-actions">
+      <button class="games-btn" onclick="exportExcel()">Export Excel</button>
+      <button class="games-btn" onclick="leavePage()">Leave</button>
+    </div>
+  </div>
+  <div class="games-body">
+    <div class="games-panel">
+      <div class="games-panel-title">Game Items</div>
+      <p class="games-help" id="gamesImportSummary">Add the game items manually, then select one for each purchase entry.</p>
+      <div class="games-add-grid">
+        <input id="newGameItemName" type="text" placeholder="Game item name" autocomplete="off">
+        <input id="newGameItemPrice" type="number" min="0" step="0.01" placeholder="Price">
+        <button class="games-add-btn" onclick="addGameItem()">Add Item</button>
+      </div>
+      <div class="games-items-list" id="gamesItemsList"></div>
+    </div>
+    <div class="games-panel">
+      <div class="games-panel-title">Purchase Entry</div>
+      <div class="games-selected" id="selectedGameLabel">Select an item from the left to start.</div>
+      <div class="games-form-grid">
+        <div class="games-field">
+          <label for="gameFirstName">First Name</label>
+          <input id="gameFirstName" type="text" autocomplete="off">
+        </div>
+        <div class="games-field">
+          <label for="gameLastName">Last Name</label>
+          <input id="gameLastName" type="text" autocomplete="off">
+        </div>
+        <div class="games-field full">
+          <label for="gameAddress">Address</label>
+          <input id="gameAddress" type="text" autocomplete="off">
+        </div>
+        <div class="games-field">
+          <label for="gamePhone">Phone Number</label>
+          <input id="gamePhone" type="text" autocomplete="off">
+        </div>
+        <div class="games-field">
+          <label for="gameKids">Number of Kids</label>
+          <input id="gameKids" type="number" min="0" step="1" autocomplete="off">
+        </div>
+      </div>
+      <button class="games-submit" id="gamesSubmitBtn" onclick="saveGamePurchase()" disabled>Save Purchase</button>
+
+      <div class="games-records">
+        <div class="games-panel-title">Recent Entries</div>
+        <div class="games-record-list" id="gamesRecordsList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 const ROOM = 'KERMESS-MAIN';
 let role = null, peer = null, conn = null;
 let menu = [], orders = [], cart = [];
+let gameItems = [], gamePurchases = [];
 let orderIdCounter = 1, itemIdCounter = 1;
 let filter = 'active', connected = false;
 let selectedCat = 'All';
+let selectedGameItemId = null;
 let darkMode = localStorage.getItem('kermess-dark') === 'true';
 
 // ===== PERSISTENCE =====
 function saveState() {
-  localStorage.setItem('kermess-pos-data', JSON.stringify({ menu, orders, orderIdCounter, itemIdCounter }));
+  localStorage.setItem('kermess-pos-data', JSON.stringify({
+    menu, orders, orderIdCounter, itemIdCounter, gameItems, gamePurchases
+  }));
 }
 function loadState() {
   const raw = localStorage.getItem('kermess-pos-data');
@@ -570,10 +776,15 @@ function loadState() {
       orders = s.orders || [];
       orderIdCounter = s.orderIdCounter || 1;
       itemIdCounter = s.itemIdCounter || 1;
+      gameItems = Array.isArray(s.gameItems) ? s.gameItems : [];
+      gamePurchases = Array.isArray(s.gamePurchases) ? s.gamePurchases : [];
     } catch { resetState(); }
   } else { resetState(); }
 }
-function resetState() { menu = getDefaultMenu(); orders = []; orderIdCounter = 1; itemIdCounter = 1; }
+function resetState() {
+  menu = getDefaultMenu(); orders = []; orderIdCounter = 1; itemIdCounter = 1;
+  gameItems = []; gamePurchases = []; selectedGameItemId = null;
+}
 function getDefaultMenu() {
   return [
     { id: 1, name: 'Hotdog', price: 2.00, category: 'Food' },
@@ -602,6 +813,12 @@ function joinAs(selectedRole) {
   role = selectedRole;
   loadState();
   applyDark();
+  if (role === 'games') {
+    document.getElementById('landingPage').classList.remove('active');
+    document.getElementById('gamesPage').classList.add('active');
+    render();
+    return;
+  }
   const myId = 'kermess-' + ROOM + '-' + role;
   const otherId = 'kermess-' + ROOM + '-' + (role === 'cashier' ? 'kitchen' : 'cashier');
   peer = new Peer(myId);
@@ -727,6 +944,60 @@ function deleteMenuItem(id) {
   if (!confirm('Remove this item?')) return;
   menu = menu.filter(m => m.id !== id); saveState(); renderCatTabs(); renderMenu();
   sendMsg({ type: 'menu-delete', id });
+}
+function normalizeMenuItems(rows) {
+  return rows.map((row, index) => {
+    const name = row.item || row.Item || row.name || row.Name || row.product || row.Product || Object.values(row)[0];
+    const rawPrice = row.price || row.Price || row.cost || row.Cost || Object.values(row)[1];
+    const category = row.category || row.Category || row.type || row.Type || 'Other';
+    if (!name) return null;
+    const parsedPrice = Number(rawPrice);
+    return {
+      id: Date.now() + index,
+      name: String(name).trim(),
+      price: Number.isFinite(parsedPrice) ? parsedPrice : 0,
+      category: String(category || 'Other').trim() || 'Other'
+    };
+  }).filter(item => item && item.name);
+}
+function importMenuExcel(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const workbook = XLSX.read(e.target.result, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
+      let items = normalizeMenuItems(rows);
+      if (!items.length) {
+        const plainRows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
+          .filter(row => Array.isArray(row) && row.some(cell => String(cell || '').trim()))
+          .map(row => ({
+            name: row[0],
+            price: row[1],
+            category: row[2] || 'Other'
+          }));
+        items = normalizeMenuItems(plainRows);
+      }
+      if (!items.length) {
+        showToast('No menu items found in this Excel file', '#ef4444');
+        return;
+      }
+      menu = items;
+      selectedCat = 'All';
+      saveState();
+      renderCatTabs();
+      renderMenu();
+      sendMsg({ type: 'sync', menu, orders, orderIdCounter, itemIdCounter });
+      showToast(`Imported ${items.length} menu items`);
+    } catch {
+      showToast('Could not read the Excel file', '#ef4444');
+    } finally {
+      event.target.value = '';
+    }
+  };
+  reader.readAsArrayBuffer(file);
 }
 function addToCart(name, price) {
   const ex = cart.find(c => c.name === name);
@@ -939,23 +1210,202 @@ function renderKitchen() {
   }).join('');
 }
 
+// ===== GAMES =====
+function renderGamesItems() {
+  const list = document.getElementById('gamesItemsList');
+  const summary = document.getElementById('gamesImportSummary');
+  const selectedItem = gameItems.find(item => item.id === selectedGameItemId);
+  summary.textContent = gameItems.length
+    ? `${gameItems.length} game items available.`
+    : 'Add the game items manually, then select one for each purchase entry.';
+  document.getElementById('selectedGameLabel').textContent = selectedItem
+    ? `Selected item: ${selectedItem.name}`
+    : 'Select an item from the left to start.';
+  document.getElementById('gamesSubmitBtn').disabled = !selectedItem;
+  if (!gameItems.length) {
+    list.innerHTML = '<div class="games-help">No game items added yet.</div>';
+    return;
+  }
+  list.innerHTML = gameItems.map(item => `
+    <div class="games-item-row">
+      <button class="games-item ${item.id === selectedGameItemId ? 'active' : ''}" onclick="selectGameItem('${esc(item.id)}')">
+        <div class="games-item-name">${escHtml(item.name)}</div>
+        <div class="games-item-meta">${item.price != null ? '$' + Number(item.price).toFixed(2) : 'No price'}</div>
+      </button>
+      <button class="games-item-delete" onclick="deleteGameItem('${esc(item.id)}')" title="Delete item">&times;</button>
+    </div>
+  `).join('');
+}
+function renderGamePurchases() {
+  const list = document.getElementById('gamesRecordsList');
+  if (!gamePurchases.length) {
+    list.innerHTML = '<div class="games-help">No purchases recorded yet.</div>';
+    return;
+  }
+  list.innerHTML = gamePurchases.slice(0, 12).map(entry => `
+    <div class="games-record">
+      <div class="games-record-top">
+        <div class="games-record-item">${escHtml(entry.item_name)}</div>
+        <div class="games-record-time">${new Date(entry.purchased_at).toLocaleString()}</div>
+      </div>
+      <div class="games-record-client">${escHtml(entry.first_name)} ${escHtml(entry.last_name)}</div>
+      <div class="games-record-meta">
+        ${escHtml(entry.address)}<br>
+        ${escHtml(entry.phone)} | ${entry.nb_kid} kid${Number(entry.nb_kid) === 1 ? '' : 's'}
+      </div>
+    </div>
+  `).join('');
+}
+function renderGames() {
+  renderGamesItems();
+  renderGamePurchases();
+}
+function selectGameItem(id) {
+  selectedGameItemId = id;
+  renderGamesItems();
+}
+function clearGameForm() {
+  document.getElementById('gameFirstName').value = '';
+  document.getElementById('gameLastName').value = '';
+  document.getElementById('gameAddress').value = '';
+  document.getElementById('gamePhone').value = '';
+  document.getElementById('gameKids').value = '';
+}
+function addGameItem() {
+  const name = document.getElementById('newGameItemName').value.trim();
+  const priceRaw = document.getElementById('newGameItemPrice').value.trim();
+  const parsedPrice = priceRaw === '' ? null : Number(priceRaw);
+  if (!name) {
+    showToast('Enter a game item name', '#ef4444');
+    return;
+  }
+  if (priceRaw !== '' && (!Number.isFinite(parsedPrice) || parsedPrice < 0)) {
+    showToast('Enter a valid price', '#ef4444');
+    return;
+  }
+  const item = {
+    id: 'game-item-' + Date.now(),
+    name,
+    price: parsedPrice
+  };
+  gameItems.push(item);
+  selectedGameItemId = item.id;
+  document.getElementById('newGameItemName').value = '';
+  document.getElementById('newGameItemPrice').value = '';
+  saveState();
+  renderGamesItems();
+  showToast('Game item added!');
+}
+function deleteGameItem(id) {
+  const item = gameItems.find(entry => entry.id === id);
+  if (!item) return;
+  if (!confirm(`Delete "${item.name}"?`)) return;
+  gameItems = gameItems.filter(entry => entry.id !== id);
+  if (selectedGameItemId === id) {
+    selectedGameItemId = gameItems.length ? gameItems[0].id : null;
+  }
+  saveState();
+  renderGamesItems();
+}
+function saveGamePurchase() {
+  const selectedItem = gameItems.find(item => item.id === selectedGameItemId);
+  if (!selectedItem) { showToast('Select an item first', '#ef4444'); return; }
+  const firstName = document.getElementById('gameFirstName').value.trim();
+  const lastName = document.getElementById('gameLastName').value.trim();
+  const address = document.getElementById('gameAddress').value.trim();
+  const phone = document.getElementById('gamePhone').value.trim();
+  const kidsRaw = document.getElementById('gameKids').value.trim();
+  const nbKid = Number(kidsRaw);
+  if (!firstName || !lastName || !address || !phone || kidsRaw === '') {
+    showToast('Fill in all client fields', '#ef4444');
+    return;
+  }
+  if (!Number.isFinite(nbKid) || nbKid < 0) {
+    showToast('Enter a valid number of kids', '#ef4444');
+    return;
+  }
+  gamePurchases.unshift({
+    id: 'game-purchase-' + Date.now(),
+    item_name: selectedItem.name,
+    item_price: selectedItem.price,
+    first_name: firstName,
+    last_name: lastName,
+    address,
+    phone,
+    nb_kid: nbKid,
+    purchased_at: new Date().toISOString()
+  });
+  saveState();
+  clearGameForm();
+  renderGamePurchases();
+  showToast('Game purchase saved!');
+}
+
 // ===== EXCEL =====
 function exportExcel() {
-  const m = {};
-  for (const o of orders) for (const it of o.items) {
-    if (!m[it.item_name]) m[it.item_name] = { item: it.item_name, quantity: 0, total: 0 };
-    m[it.item_name].quantity++; m[it.item_name].total += it.price;
-  }
-  const rows = Object.values(m).sort((a, b) => b.quantity - a.quantity);
-  const tq = rows.reduce((s, r) => s + r.quantity, 0);
-  const tr = rows.reduce((s, r) => s + r.total, 0);
-  rows.push({ item: 'TOTAL', quantity: tq, total: tr });
-  const wsData = [['Item', 'Quantity Sold', 'Total Revenue'], ...rows.map(r => [r.item, r.quantity, '$' + r.total.toFixed(2)])];
-  const ws = XLSX.utils.aoa_to_sheet(wsData);
-  ws['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 15 }];
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Sales Report');
-  XLSX.writeFile(wb, 'kermess-sales-report.xlsx');
+  const salesMap = {};
+  for (const o of orders) for (const it of o.items) {
+    if (!salesMap[it.item_name]) salesMap[it.item_name] = { item: it.item_name, quantity: 0, total: 0 };
+    salesMap[it.item_name].quantity++;
+    salesMap[it.item_name].total += it.price;
+  }
+  const salesRows = Object.values(salesMap).sort((a, b) => b.quantity - a.quantity);
+  const totalQty = salesRows.reduce((s, r) => s + r.quantity, 0);
+  const totalRevenue = salesRows.reduce((s, r) => s + r.total, 0);
+  const salesSheetRows = [['Item', 'Quantity Sold', 'Total Revenue'],
+    ...salesRows.map(r => [r.item, r.quantity, Number(r.total.toFixed(2))]),
+    ['TOTAL', totalQty, Number(totalRevenue.toFixed(2))]
+  ];
+  const salesSheet = XLSX.utils.aoa_to_sheet(salesSheetRows);
+  salesSheet['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 15 }];
+  XLSX.utils.book_append_sheet(wb, salesSheet, 'Sales Report');
+
+  const ordersSheetRows = [['Order ID', 'Customer Name', 'Created At', 'Item', 'Price', 'Done', 'Comment']];
+  for (const order of orders) {
+    for (const item of order.items) {
+      ordersSheetRows.push([
+        order.id,
+        order.customer_name,
+        order.created_at,
+        item.item_name,
+        Number(item.price.toFixed(2)),
+        item.done ? 'Yes' : 'No',
+        item.comment || ''
+      ]);
+    }
+  }
+  const ordersSheet = XLSX.utils.aoa_to_sheet(ordersSheetRows);
+  ordersSheet['!cols'] = [{ wch: 10 }, { wch: 20 }, { wch: 24 }, { wch: 20 }, { wch: 10 }, { wch: 10 }, { wch: 28 }];
+  XLSX.utils.book_append_sheet(wb, ordersSheet, 'Orders');
+
+  const gameSheetRows = [[
+    'Item', 'Price', 'First Name', 'Last Name', 'Address', 'Phone Number', 'Number of Kids', 'Purchased At'
+  ]];
+  for (const entry of gamePurchases) {
+    gameSheetRows.push([
+      entry.item_name,
+      entry.item_price == null ? '' : Number(entry.item_price.toFixed(2)),
+      entry.first_name,
+      entry.last_name,
+      entry.address,
+      entry.phone,
+      entry.nb_kid,
+      entry.purchased_at
+    ]);
+  }
+  const gameSheet = XLSX.utils.aoa_to_sheet(gameSheetRows);
+  gameSheet['!cols'] = [{ wch: 22 }, { wch: 10 }, { wch: 16 }, { wch: 16 }, { wch: 30 }, { wch: 18 }, { wch: 14 }, { wch: 24 }];
+  XLSX.utils.book_append_sheet(wb, gameSheet, 'Games Purchases');
+
+  if (gameItems.length) {
+    const itemsSheetRows = [['Item', 'Price'], ...gameItems.map(item => [item.name, item.price == null ? '' : Number(item.price.toFixed(2))])];
+    const itemsSheet = XLSX.utils.aoa_to_sheet(itemsSheetRows);
+    itemsSheet['!cols'] = [{ wch: 24 }, { wch: 10 }];
+    XLSX.utils.book_append_sheet(wb, itemsSheet, 'Games Items');
+  }
+
+  XLSX.writeFile(wb, 'kermess-data-export.xlsx');
   showToast('Excel exported!');
 }
 
@@ -963,6 +1413,7 @@ function exportExcel() {
 function render() {
   if (role === 'cashier') { renderCatTabs(); renderMenu(); renderCart(); }
   else if (role === 'kitchen') { renderKitchen(); }
+  else if (role === 'games') { renderGames(); }
 }
 function leavePage() {
   if (peer) peer.destroy();
