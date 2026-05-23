@@ -463,7 +463,7 @@
     }
     .games-item-delete:hover { border-color: #ef4444; background: #fff5f5; }
     .games-add-grid {
-      display: grid; grid-template-columns: minmax(0, 1fr) 120px auto; gap: 8px; margin-bottom: 14px;
+      display: grid; grid-template-columns: minmax(0, 1.2fr) 120px 140px auto; gap: 8px; margin-bottom: 14px;
     }
     .games-add-grid input {
       width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 10px;
@@ -597,6 +597,7 @@
         <span class="dot"></span> <span class="status-text">Waiting...</span>
       </span>
       <button class="dark-toggle" id="darkToggle" onclick="toggleDark()" title="Toggle dark mode"></button>
+      <button class="topbar-btn" onclick="clearPreviousOrders()">Clear Previous Orders</button>
       <button class="topbar-btn" onclick="exportExcel()">Export Excel</button>
       <button class="topbar-btn" onclick="leavePage()">Leave</button>
     </div>
@@ -665,8 +666,12 @@
       <input type="text" id="newItemName" placeholder="e.g. Pizza...">
     </div>
     <div class="modal-field">
-      <label>Price ($)</label>
+      <label>Price USD ($)</label>
       <input type="number" id="newItemPrice" step="0.01" min="0" placeholder="0.00">
+    </div>
+    <div class="modal-field">
+      <label>Price LBP (L.L.)</label>
+      <input type="number" id="newItemPriceLbp" step="1" min="0" placeholder="0">
     </div>
     <div class="modal-field">
       <label>Category</label>
@@ -699,6 +704,7 @@
       <span class="conn-badge off" id="kitchenStatus">
         <span class="dot"></span> <span class="status-text">Waiting...</span>
       </span>
+      <button class="kitchen-btn" onclick="clearPreviousOrders()">Clear Previous Orders</button>
       <button class="kitchen-btn" onclick="exportExcel()">Export Excel</button>
       <button class="kitchen-btn" onclick="leavePage()">Leave</button>
     </div>
@@ -721,6 +727,7 @@
       </div>
     </div>
     <div class="games-actions">
+      <button class="games-btn" onclick="clearPreviousOrders()">Clear Previous Orders</button>
       <button class="games-btn" onclick="exportExcel()">Export Excel</button>
       <button class="games-btn" onclick="leavePage()">Leave</button>
     </div>
@@ -733,7 +740,8 @@
       <p class="games-help" id="gamesImportSummary" style="margin-bottom:14px;">Add each game once. Then use it like a cashier button.</p>
       <div class="games-add-grid">
         <input id="newGameItemName" type="text" placeholder="Game item name" autocomplete="off">
-        <input id="newGameItemPrice" type="number" min="0" step="0.01" placeholder="Price">
+        <input id="newGameItemPrice" type="number" min="0" step="0.01" placeholder="USD price">
+        <input id="newGameItemPriceLbp" type="number" min="0" step="1" placeholder="LBP price">
         <button class="games-add-btn" onclick="addGameItem()">Save Game</button>
       </div>
       <div class="games-items-list" id="gamesItemsList"></div>
@@ -790,6 +798,8 @@
 
 <script>
 const ROOM = 'KERMESS-MAIN';
+const STORAGE_KEY = 'kermess-pos-data';
+const STORAGE_SYNC_KEY = 'kermess-pos-sync';
 let role = null, peer = null, conn = null;
 let menu = [], orders = [], cart = [];
 let gameItems = [], gamePurchases = [];
@@ -803,23 +813,27 @@ let gameReceivedAmount = 0;
 
 // ===== PERSISTENCE =====
 function saveState() {
-  localStorage.setItem('kermess-pos-data', JSON.stringify({
+  const state = {
     menu, orders, orderIdCounter, itemIdCounter, gameItems, gamePurchases
-  }));
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  localStorage.setItem(STORAGE_SYNC_KEY, JSON.stringify({ at: Date.now(), state }));
 }
 function loadState() {
-  const raw = localStorage.getItem('kermess-pos-data');
+  const raw = localStorage.getItem(STORAGE_KEY);
   if (raw) {
     try {
-      const s = JSON.parse(raw);
-      menu = s.menu || getDefaultMenu();
-      orders = s.orders || [];
-      orderIdCounter = s.orderIdCounter || 1;
-      itemIdCounter = s.itemIdCounter || 1;
-      gameItems = Array.isArray(s.gameItems) ? s.gameItems : [];
-      gamePurchases = Array.isArray(s.gamePurchases) ? s.gamePurchases : [];
+      applyPersistedState(JSON.parse(raw));
     } catch { resetState(); }
   } else { resetState(); }
+}
+function applyPersistedState(s) {
+  menu = s.menu || getDefaultMenu();
+  orders = s.orders || [];
+  orderIdCounter = s.orderIdCounter || 1;
+  itemIdCounter = s.itemIdCounter || 1;
+  gameItems = Array.isArray(s.gameItems) ? s.gameItems : [];
+  gamePurchases = Array.isArray(s.gamePurchases) ? s.gamePurchases : [];
 }
 function resetState() {
   menu = getDefaultMenu(); orders = []; orderIdCounter = 1; itemIdCounter = 1;
@@ -827,15 +841,24 @@ function resetState() {
 }
 function getDefaultMenu() {
   return [
-    { id: 1, name: 'Hotdog', price: 2.00, category: 'Food' },
-    { id: 2, name: 'Burger', price: 3.50, category: 'Food' },
-    { id: 3, name: 'Fries', price: 1.50, category: 'Food' },
-    { id: 4, name: 'Soda', price: 1.00, category: 'Drinks' },
-    { id: 5, name: 'Water', price: 0.50, category: 'Drinks' },
-    { id: 6, name: 'Cake', price: 2.50, category: 'Desserts' },
-    { id: 7, name: 'Coffee', price: 1.50, category: 'Drinks' },
-    { id: 8, name: 'Popcorn', price: 2.00, category: 'Food' },
+    { id: 1, name: 'Hotdog', price: 2.00, lbpPrice: 180000, category: 'Food' },
+    { id: 2, name: 'Burger', price: 3.50, lbpPrice: 315000, category: 'Food' },
+    { id: 3, name: 'Fries', price: 1.50, lbpPrice: 135000, category: 'Food' },
+    { id: 4, name: 'Soda', price: 1.00, lbpPrice: 90000, category: 'Drinks' },
+    { id: 5, name: 'Water', price: 0.50, lbpPrice: 45000, category: 'Drinks' },
+    { id: 6, name: 'Cake', price: 2.50, lbpPrice: 225000, category: 'Desserts' },
+    { id: 7, name: 'Coffee', price: 1.50, lbpPrice: 135000, category: 'Drinks' },
+    { id: 8, name: 'Popcorn', price: 2.00, lbpPrice: 180000, category: 'Food' },
   ];
+}
+function getItemUsdPrice(item) {
+  const value = Number(item.price ?? item.usdPrice ?? 0);
+  return Number.isFinite(value) ? value : 0;
+}
+function getItemLbpPrice(item) {
+  const direct = Number(item.lbpPrice ?? item.priceLbp);
+  if (Number.isFinite(direct) && direct >= 0) return direct;
+  return Math.round(getItemUsdPrice(item) * LBP_RATE);
 }
 
 // ===== DARK MODE =====
@@ -921,6 +944,14 @@ function handleMessage(msg) {
       saveState(); render(); break;
     case 'menu-add': menu.push(msg.item); saveState(); render(); break;
     case 'menu-delete': menu = menu.filter(m => m.id !== msg.id); saveState(); render(); break;
+    case 'clear-history':
+      orders = [];
+      gamePurchases = [];
+      cart = [];
+      gameCart = [];
+      receivedAmount = 0;
+      gameReceivedAmount = 0;
+      saveState(); render(); break;
   }
 }
 function updateConnectionStatus(on) {
@@ -951,17 +982,18 @@ function selectCat(cat) {
 function renderMenu() {
   const filtered = selectedCat === 'All' ? menu : menu.filter(m => (m.category || 'Other') === selectedCat);
   document.getElementById('menuGrid').innerHTML = filtered.map(item => `
-    <div class="menu-item" onclick="addToCart('${esc(item.name)}', ${item.price})">
+    <div class="menu-item" onclick="addToCart(${item.id})">
       <button class="m-del" onclick="event.stopPropagation(); deleteMenuItem(${item.id})" title="Remove">&times;</button>
       <div class="m-name">${escHtml(item.name)}</div>
       <div class="m-cat">${escHtml(item.category || 'Other')}</div>
-      <div class="m-price">$${item.price.toFixed(2)}</div>
+      <div class="m-price">$${getItemUsdPrice(item).toFixed(2)} / ${formatLBP(getItemLbpPrice(item))} L.L.</div>
     </div>
   `).join('');
 }
 function openAddModal() {
   document.getElementById('newItemName').value = '';
   document.getElementById('newItemPrice').value = '';
+  document.getElementById('newItemPriceLbp').value = '';
   document.getElementById('newItemCat').value = 'Food';
   document.getElementById('addItemModal').classList.add('show');
   setTimeout(() => document.getElementById('newItemName').focus(), 100);
@@ -972,9 +1004,12 @@ function closeAddModal() {
 function addMenuItem() {
   const name = document.getElementById('newItemName').value.trim();
   const price = parseFloat(document.getElementById('newItemPrice').value);
+  const lbpPrice = parseFloat(document.getElementById('newItemPriceLbp').value);
   const category = document.getElementById('newItemCat').value;
-  if (!name || isNaN(price) || price < 0) { showToast('Fill in name and price', '#ef4444'); return; }
-  const item = { id: Date.now(), name, price, category };
+  if (!name || (isNaN(price) && isNaN(lbpPrice)) || price < 0 || lbpPrice < 0) { showToast('Fill in name and at least one price', '#ef4444'); return; }
+  const usdValue = Number.isFinite(price) ? price : lbpPrice / LBP_RATE;
+  const lbpValue = Number.isFinite(lbpPrice) ? lbpPrice : Math.round(price * LBP_RATE);
+  const item = { id: Date.now(), name, price: usdValue, lbpPrice: lbpValue, category };
   menu.push(item); saveState(); renderCatTabs(); renderMenu();
   sendMsg({ type: 'menu-add', item });
   closeAddModal();
@@ -988,14 +1023,19 @@ function deleteMenuItem(id) {
 function normalizeMenuItems(rows) {
   return rows.map((row, index) => {
     const name = row.item || row.Item || row.name || row.Name || row.product || row.Product || Object.values(row)[0];
-    const rawPrice = row.price || row.Price || row.cost || row.Cost || Object.values(row)[1];
+    const rawPrice = row.price || row.Price || row.usd || row.USD || row.cost || row.Cost || Object.values(row)[1];
+    const rawLbpPrice = row.lbp || row.LBP || row.lbpPrice || row.LbpPrice || row.price_lbp || row.Price_Lbp || Object.values(row)[2];
     const category = row.category || row.Category || row.type || row.Type || 'Other';
     if (!name) return null;
     const parsedPrice = Number(rawPrice);
+    const parsedLbpPrice = Number(rawLbpPrice);
+    const usdValue = Number.isFinite(parsedPrice) ? parsedPrice : (Number.isFinite(parsedLbpPrice) ? parsedLbpPrice / LBP_RATE : 0);
+    const lbpValue = Number.isFinite(parsedLbpPrice) ? parsedLbpPrice : Math.round(usdValue * LBP_RATE);
     return {
       id: Date.now() + index,
       name: String(name).trim(),
-      price: Number.isFinite(parsedPrice) ? parsedPrice : 0,
+      price: usdValue,
+      lbpPrice: lbpValue,
       category: String(category || 'Other').trim() || 'Other'
     };
   }).filter(item => item && item.name);
@@ -1016,7 +1056,8 @@ function importMenuExcel(event) {
           .map(row => ({
             name: row[0],
             price: row[1],
-            category: row[2] || 'Other'
+            lbp: row[2],
+            category: row[3] || 'Other'
           }));
         items = normalizeMenuItems(plainRows);
       }
@@ -1039,20 +1080,23 @@ function importMenuExcel(event) {
   };
   reader.readAsArrayBuffer(file);
 }
-function addToCart(name, price) {
-  const ex = cart.find(c => c.name === name);
-  if (ex) ex.qty++; else cart.push({ name, price, qty: 1, comment: '' });
+function addToCart(id) {
+  const menuItem = menu.find(item => item.id === id);
+  if (!menuItem) return;
+  const ex = cart.find(c => c.id === id);
+  if (ex) ex.qty++;
+  else cart.push({ id, name: menuItem.name, price: getItemUsdPrice(menuItem), lbpPrice: getItemLbpPrice(menuItem), qty: 1, comment: '' });
   renderCart();
 }
-function changeQty(name, delta) {
-  const item = cart.find(c => c.name === name);
+function changeQty(id, delta) {
+  const item = cart.find(c => c.id === id);
   if (!item) return;
   item.qty += delta;
-  if (item.qty <= 0) cart = cart.filter(c => c.name !== name);
+  if (item.qty <= 0) cart = cart.filter(c => c.id !== id);
   renderCart();
 }
-function updateComment(name, comment) {
-  const item = cart.find(c => c.name === name);
+function updateComment(id, comment) {
+  const item = cart.find(c => c.id === id);
   if (item) item.comment = comment;
 }
 function renderCart() {
@@ -1070,27 +1114,28 @@ function renderCart() {
       <div class="cart-item-top">
         <div class="info">
           <div class="qty-controls">
-            <button onclick="changeQty('${esc(item.name)}', -1)">&minus;</button>
+            <button onclick="changeQty(${item.id}, -1)">&minus;</button>
             <span class="qty">${item.qty}</span>
-            <button onclick="changeQty('${esc(item.name)}', 1)">+</button>
+            <button onclick="changeQty(${item.id}, 1)">+</button>
           </div>
           <span class="cart-item-name">${escHtml(item.name)}</span>
         </div>
-        <span class="item-total">$${(item.price * item.qty).toFixed(2)}</span>
+        <span class="item-total">${currency === 'usd' ? '$' + (item.price * item.qty).toFixed(2) : formatLBP(item.lbpPrice * item.qty) + ' L.L.'}</span>
       </div>
       <input class="comment-input" type="text" placeholder="Add a note..."
-        value="${escAttr(item.comment)}" onchange="updateComment('${esc(item.name)}', this.value)">
+        value="${escAttr(item.comment)}" onchange="updateComment(${item.id}, this.value)">
     </div>
   `).join('');
   // Quick summary (right panel)
   summary.innerHTML = cart.map(item =>
     `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-light);font-size:0.85rem;">
       <span>${item.qty}x ${escHtml(item.name)}</span>
-      <span style="font-weight:700;color:var(--accent)">$${(item.price * item.qty).toFixed(2)}</span>
+      <span style="font-weight:700;color:var(--accent)">${currency === 'usd' ? '$' + (item.price * item.qty).toFixed(2) : formatLBP(item.lbpPrice * item.qty) + ' L.L.'}</span>
     </div>`
   ).join('');
-  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  document.getElementById('totalAmount').textContent = '$' + total.toFixed(2);
+  document.getElementById('totalAmount').textContent = currency === 'usd'
+    ? '$' + getCartTotalUsd().toFixed(2)
+    : formatLBP(getCartTotalLbp()) + ' L.L.';
   footer.style.display = 'block';
   renderQuickCash();
   calcChange();
@@ -1103,7 +1148,7 @@ function sendOrder() {
   const items = [];
   for (const c of cart)
     for (let i = 0; i < c.qty; i++)
-      items.push({ id: itemIdCounter++, item_name: c.name, price: c.price, done: false, comment: c.comment || '' });
+      items.push({ id: itemIdCounter++, item_name: c.name, price: c.price, lbp_price: c.lbpPrice, done: false, comment: c.comment || '' });
   const order = { id: orderId, customer_name: name, created_at: new Date().toISOString(), items };
   orders.unshift(order); saveState();
   sendMsg({ type: 'new-order', order });
@@ -1125,10 +1170,12 @@ function setCurrency(c) {
   document.getElementById('receivedLabel').textContent = c === 'usd' ? 'Received $' : 'Received L.L.';
   receivedAmount = 0;
   renderQuickCash();
+  renderCart();
   calcChange();
 }
 function renderQuickCash() {
-  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const totalUsd = getCartTotalUsd();
+  const totalLbp = getCartTotalLbp();
   let buttons = '';
   if (currency === 'usd') {
     const amounts = [1, 2, 5, 10, 20, 50];
@@ -1142,7 +1189,7 @@ function renderQuickCash() {
     ).join('');
   }
   // Add exact and clear buttons
-  const exactVal = currency === 'usd' ? total : total * LBP_RATE;
+  const exactVal = currency === 'usd' ? totalUsd : totalLbp;
   buttons += `<button class="exact-btn" onclick="setReceived(${exactVal})">Exact</button>`;
   buttons += `<button class="clear-btn" onclick="setReceived(0)">Clear</button>`;
   document.getElementById('quickCash').innerHTML = buttons;
@@ -1165,7 +1212,8 @@ function updateReceivedDisplay() {
   }
 }
 function calcChange() {
-  const totalUSD = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const totalUSD = getCartTotalUsd();
+  const totalLBP = getCartTotalLbp();
   const el = document.getElementById('changeResult');
   const amt = document.getElementById('changeAmount');
   if (receivedAmount === 0) {
@@ -1173,16 +1221,27 @@ function calcChange() {
     amt.textContent = 'Tap an amount above';
     return;
   }
-  let receivedUSD = currency === 'usd' ? receivedAmount : receivedAmount / LBP_RATE;
-  let changeUSD = receivedUSD - totalUSD;
-  if (changeUSD >= 0) {
+  const receivedValue = receivedAmount;
+  const totalValue = currency === 'usd' ? totalUSD : totalLBP;
+  const changeValue = receivedValue - totalValue;
+  if (changeValue >= 0) {
     el.className = 'change-result positive';
-    amt.textContent = `$${changeUSD.toFixed(2)} / ${formatLBP(changeUSD * LBP_RATE)} L.L.`;
+    amt.textContent = currency === 'usd'
+      ? `$${changeValue.toFixed(2)} / ${formatLBP(changeValue * LBP_RATE)} L.L.`
+      : `${formatLBP(changeValue)} L.L. / $${(changeValue / LBP_RATE).toFixed(2)}`;
   } else {
     el.className = 'change-result negative';
-    const owed = Math.abs(changeUSD);
-    amt.textContent = `Still owed: $${owed.toFixed(2)} / ${formatLBP(owed * LBP_RATE)} L.L.`;
+    const owed = Math.abs(changeValue);
+    amt.textContent = currency === 'usd'
+      ? `Still owed: $${owed.toFixed(2)} / ${formatLBP(owed * LBP_RATE)} L.L.`
+      : `Still owed: ${formatLBP(owed)} L.L. / $${(owed / LBP_RATE).toFixed(2)}`;
   }
+}
+function getCartTotalUsd() {
+  return cart.reduce((s, i) => s + i.price * i.qty, 0);
+}
+function getCartTotalLbp() {
+  return cart.reduce((s, i) => s + i.lbpPrice * i.qty, 0);
 }
 function formatLBP(amount) { return Math.round(amount).toLocaleString(); }
 
@@ -1265,7 +1324,7 @@ function renderGamesItems() {
     <div class="games-item-row">
       <button class="games-item" onclick="addGameToCart('${esc(item.id)}')">
         <div class="games-item-name">${escHtml(item.name)}</div>
-        <div class="games-item-meta">${item.price != null ? '$' + Number(item.price).toFixed(2) : 'No price'}</div>
+        <div class="games-item-meta">$${getItemUsdPrice(item).toFixed(2)} / ${formatLBP(getItemLbpPrice(item))} L.L.</div>
       </button>
       <button class="games-item-delete" onclick="deleteGameItem('${esc(item.id)}')" title="Delete item">&times;</button>
     </div>
@@ -1299,7 +1358,7 @@ function renderGames() {
 function getGamePurchaseItems(entry) {
   if (Array.isArray(entry.items) && entry.items.length) return entry.items;
   if (entry.item_name) {
-    return [{ name: entry.item_name, price: entry.item_price || 0, qty: 1 }];
+    return [{ name: entry.item_name, price: entry.item_price || 0, lbpPrice: entry.item_lbp_price || Math.round((entry.item_price || 0) * LBP_RATE), qty: 1 }];
   }
   return [];
 }
@@ -1318,7 +1377,7 @@ function addGameToCart(id) {
   if (!game) return;
   const existing = gameCart.find(item => item.id === id);
   if (existing) existing.qty++;
-  else gameCart.push({ id: game.id, name: game.name, price: game.price || 0, qty: 1 });
+  else gameCart.push({ id: game.id, name: game.name, price: getItemUsdPrice(game), lbpPrice: getItemLbpPrice(game), qty: 1 });
   renderGameCart();
 }
 function changeGameQty(id, delta) {
@@ -1352,44 +1411,57 @@ function renderGameCart() {
           </div>
           <span class="cart-item-name">${escHtml(item.name)}</span>
         </div>
-        <span class="item-total">$${((item.price || 0) * item.qty).toFixed(2)}</span>
+        <span class="item-total">${gameCurrency === 'usd' ? '$' + ((item.price || 0) * item.qty).toFixed(2) : formatLBP((item.lbpPrice || 0) * item.qty) + ' L.L.'}</span>
       </div>
     </div>
   `).join('');
   summary.innerHTML = gameCart.map(item =>
     `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-light);font-size:0.85rem;">
       <span>${item.qty}x ${escHtml(item.name)}</span>
-      <span style="font-weight:700;color:var(--accent)">$${((item.price || 0) * item.qty).toFixed(2)}</span>
+      <span style="font-weight:700;color:var(--accent)">${gameCurrency === 'usd' ? '$' + ((item.price || 0) * item.qty).toFixed(2) : formatLBP((item.lbpPrice || 0) * item.qty) + ' L.L.'}</span>
     </div>`
   ).join('');
-  document.getElementById('gameTotalAmount').textContent = '$' + getGameTotal().toFixed(2);
+  document.getElementById('gameTotalAmount').textContent = gameCurrency === 'usd'
+    ? '$' + getGameTotalUsd().toFixed(2)
+    : formatLBP(getGameTotalLbp()) + ' L.L.';
   footer.style.display = 'block';
   renderGameQuickCash();
   calcGameChange();
 }
-function getGameTotal() {
+function getGameTotalUsd() {
   return gameCart.reduce((sum, item) => sum + (item.price || 0) * item.qty, 0);
+}
+function getGameTotalLbp() {
+  return gameCart.reduce((sum, item) => sum + (item.lbpPrice || 0) * item.qty, 0);
 }
 function addGameItem() {
   const name = document.getElementById('newGameItemName').value.trim();
   const priceRaw = document.getElementById('newGameItemPrice').value.trim();
+  const priceLbpRaw = document.getElementById('newGameItemPriceLbp').value.trim();
   const parsedPrice = priceRaw === '' ? null : Number(priceRaw);
+  const parsedLbpPrice = priceLbpRaw === '' ? null : Number(priceLbpRaw);
   if (!name) {
     showToast('Enter a game item name', '#ef4444');
     return;
   }
-  if (priceRaw !== '' && (!Number.isFinite(parsedPrice) || parsedPrice < 0)) {
-    showToast('Enter a valid price', '#ef4444');
+  if ((priceRaw !== '' && (!Number.isFinite(parsedPrice) || parsedPrice < 0)) || (priceLbpRaw !== '' && (!Number.isFinite(parsedLbpPrice) || parsedLbpPrice < 0))) {
+    showToast('Enter valid prices', '#ef4444');
+    return;
+  }
+  if (parsedPrice == null && parsedLbpPrice == null) {
+    showToast('Enter at least one price', '#ef4444');
     return;
   }
   const item = {
     id: 'game-item-' + Date.now(),
     name,
-    price: parsedPrice
+    price: parsedPrice != null ? parsedPrice : parsedLbpPrice / LBP_RATE,
+    lbpPrice: parsedLbpPrice != null ? parsedLbpPrice : Math.round(parsedPrice * LBP_RATE)
   };
   gameItems.push(item);
   document.getElementById('newGameItemName').value = '';
   document.getElementById('newGameItemPrice').value = '';
+  document.getElementById('newGameItemPriceLbp').value = '';
   saveState();
   renderGamesItems();
   showToast('Game saved as quick button!');
@@ -1422,8 +1494,9 @@ function saveGamePurchase() {
   }
   gamePurchases.unshift({
     id: 'game-purchase-' + Date.now(),
-    items: gameCart.map(item => ({ name: item.name, price: item.price || 0, qty: item.qty })),
-    total: getGameTotal(),
+    items: gameCart.map(item => ({ name: item.name, price: item.price || 0, lbpPrice: item.lbpPrice || 0, qty: item.qty })),
+    total: getGameTotalUsd(),
+    totalLbp: getGameTotalLbp(),
     first_name: firstName,
     last_name: lastName,
     address,
@@ -1446,17 +1519,19 @@ function setGameCurrency(c) {
   document.getElementById('gameReceivedLabel').textContent = c === 'usd' ? 'Received $' : 'Received L.L.';
   gameReceivedAmount = 0;
   renderGameQuickCash();
+  renderGameCart();
   calcGameChange();
 }
 function renderGameQuickCash() {
-  const total = getGameTotal();
+  const totalUsd = getGameTotalUsd();
+  const totalLbp = getGameTotalLbp();
   let buttons = '';
   if (gameCurrency === 'usd') {
     buttons = [1, 2, 5, 10, 20, 50].map(a => `<button onclick="setGameReceived(${a})">$${a}</button>`).join('');
   } else {
     buttons = [50000, 100000, 250000, 500000, 1000000, 2000000].map(a => `<button onclick="setGameReceived(${a})">${(a/1000)}K</button>`).join('');
   }
-  const exactVal = gameCurrency === 'usd' ? total : total * LBP_RATE;
+  const exactVal = gameCurrency === 'usd' ? totalUsd : totalLbp;
   buttons += `<button class="exact-btn" onclick="setGameReceived(${exactVal})">Exact</button>`;
   buttons += `<button class="clear-btn" onclick="resetGameReceived()">Clear</button>`;
   document.getElementById('gameQuickCash').innerHTML = buttons;
@@ -1481,7 +1556,8 @@ function updateGameReceivedDisplay() {
   else display.textContent = formatLBP(gameReceivedAmount) + ' L.L.';
 }
 function calcGameChange() {
-  const totalUSD = getGameTotal();
+  const totalUSD = getGameTotalUsd();
+  const totalLBP = getGameTotalLbp();
   const el = document.getElementById('gameChangeResult');
   const amt = document.getElementById('gameChangeAmount');
   if (!el || !amt) return;
@@ -1490,15 +1566,19 @@ function calcGameChange() {
     amt.textContent = 'Tap an amount above';
     return;
   }
-  const receivedUSD = gameCurrency === 'usd' ? gameReceivedAmount : gameReceivedAmount / LBP_RATE;
-  const changeUSD = receivedUSD - totalUSD;
-  if (changeUSD >= 0) {
+  const totalValue = gameCurrency === 'usd' ? totalUSD : totalLBP;
+  const changeValue = gameReceivedAmount - totalValue;
+  if (changeValue >= 0) {
     el.className = 'change-result positive';
-    amt.textContent = `$${changeUSD.toFixed(2)} / ${formatLBP(changeUSD * LBP_RATE)} L.L.`;
+    amt.textContent = gameCurrency === 'usd'
+      ? `$${changeValue.toFixed(2)} / ${formatLBP(changeValue * LBP_RATE)} L.L.`
+      : `${formatLBP(changeValue)} L.L. / $${(changeValue / LBP_RATE).toFixed(2)}`;
   } else {
     el.className = 'change-result negative';
-    const owed = Math.abs(changeUSD);
-    amt.textContent = `Still owed: $${owed.toFixed(2)} / ${formatLBP(owed * LBP_RATE)} L.L.`;
+    const owed = Math.abs(changeValue);
+    amt.textContent = gameCurrency === 'usd'
+      ? `Still owed: $${owed.toFixed(2)} / ${formatLBP(owed * LBP_RATE)} L.L.`
+      : `Still owed: ${formatLBP(owed)} L.L. / $${(owed / LBP_RATE).toFixed(2)}`;
   }
 }
 
@@ -1541,19 +1621,23 @@ function exportExcel() {
   XLSX.utils.book_append_sheet(wb, ordersSheet, 'Orders');
 
   const gameSheetRows = [[
-    'Order ID', 'Item', 'Quantity', 'Price', 'Line Total', 'Order Total', 'First Name', 'Last Name', 'Address', 'Phone Number', 'Number of Kids', 'Purchased At'
+    'Order ID', 'Item', 'Quantity', 'USD Price', 'LBP Price', 'USD Line Total', 'LBP Line Total', 'USD Order Total', 'LBP Order Total', 'First Name', 'Last Name', 'Address', 'Phone Number', 'Number of Kids', 'Purchased At'
   ]];
   for (const entry of gamePurchases) {
     const items = getGamePurchaseItems(entry);
     const orderTotal = entry.total != null ? entry.total : items.reduce((sum, item) => sum + (item.price || 0) * item.qty, 0);
+    const orderTotalLbp = entry.totalLbp != null ? entry.totalLbp : items.reduce((sum, item) => sum + (item.lbpPrice || Math.round((item.price || 0) * LBP_RATE)) * item.qty, 0);
     for (const item of items) {
       gameSheetRows.push([
         entry.id,
         item.name,
         item.qty,
         Number((item.price || 0).toFixed(2)),
+        Number((item.lbpPrice || Math.round((item.price || 0) * LBP_RATE)).toFixed(0)),
         Number(((item.price || 0) * item.qty).toFixed(2)),
+        Number((((item.lbpPrice || Math.round((item.price || 0) * LBP_RATE))) * item.qty).toFixed(0)),
         Number(orderTotal.toFixed(2)),
+        Number(orderTotalLbp.toFixed(0)),
         entry.first_name,
         entry.last_name,
         entry.address,
@@ -1564,18 +1648,31 @@ function exportExcel() {
     }
   }
   const gameSheet = XLSX.utils.aoa_to_sheet(gameSheetRows);
-  gameSheet['!cols'] = [{ wch: 22 }, { wch: 20 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 16 }, { wch: 16 }, { wch: 30 }, { wch: 18 }, { wch: 14 }, { wch: 24 }];
+  gameSheet['!cols'] = [{ wch: 22 }, { wch: 20 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 30 }, { wch: 18 }, { wch: 14 }, { wch: 24 }];
   XLSX.utils.book_append_sheet(wb, gameSheet, 'Games Purchases');
 
   if (gameItems.length) {
-    const itemsSheetRows = [['Item', 'Price'], ...gameItems.map(item => [item.name, item.price == null ? '' : Number(item.price.toFixed(2))])];
+    const itemsSheetRows = [['Item', 'USD Price', 'LBP Price'], ...gameItems.map(item => [item.name, Number(getItemUsdPrice(item).toFixed(2)), Number(getItemLbpPrice(item).toFixed(0))])];
     const itemsSheet = XLSX.utils.aoa_to_sheet(itemsSheetRows);
-    itemsSheet['!cols'] = [{ wch: 24 }, { wch: 10 }];
+    itemsSheet['!cols'] = [{ wch: 24 }, { wch: 10 }, { wch: 12 }];
     XLSX.utils.book_append_sheet(wb, itemsSheet, 'Games Items');
   }
 
   XLSX.writeFile(wb, 'kermess-data-export.xlsx');
   showToast('Excel exported!');
+}
+function clearPreviousOrders() {
+  if (!confirm('Clear all previous food orders and game purchases? Saved items will stay.')) return;
+  orders = [];
+  gamePurchases = [];
+  cart = [];
+  gameCart = [];
+  receivedAmount = 0;
+  gameReceivedAmount = 0;
+  saveState();
+  sendMsg({ type: 'clear-history' });
+  render();
+  showToast('Previous orders cleared!');
 }
 
 // ===== SHARED =====
@@ -1607,6 +1704,16 @@ function playBeep() {
 function esc(s) { return s.replace(/'/g, "\\'"); }
 function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function escAttr(s) { return s.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+window.addEventListener('storage', (event) => {
+  if (event.key !== STORAGE_SYNC_KEY || !event.newValue) return;
+  try {
+    const payload = JSON.parse(event.newValue);
+    if (!payload || !payload.state) return;
+    applyPersistedState(payload.state);
+    render();
+  } catch {}
+});
 
 setInterval(() => {
   if (peer && !connected) tryConnect('kermess-' + ROOM + '-' + (role === 'cashier' ? 'kitchen' : 'cashier'));
