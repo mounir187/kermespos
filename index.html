@@ -6,6 +6,8 @@
   <title>Kermess POS</title>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -800,6 +802,15 @@
 const ROOM = 'KERMESS-MAIN';
 const STORAGE_KEY = 'kermess-pos-data';
 const STORAGE_SYNC_KEY = 'kermess-pos-sync';
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCyydIviAL1PetK-KGK3ao8P6rmvPeddhY",
+  authDomain: "kermespos-d9527.firebaseapp.com",
+  projectId: "kermespos-d9527",
+  storageBucket: "kermespos-d9527.firebasestorage.app",
+  messagingSenderId: "778394753449",
+  appId: "1:778394753449:web:2ba5f785f5a1589ed10cb8",
+  measurementId: "G-P2PGJSGYDN"
+};
 let role = null, peer = null, conn = null;
 let menu = [], orders = [], cart = [];
 let gameItems = [], gamePurchases = [];
@@ -810,14 +821,17 @@ let gameCart = [];
 let darkMode = localStorage.getItem('kermess-dark') === 'true';
 let gameCurrency = 'usd';
 let gameReceivedAmount = 0;
+let db = null, remoteUnsubscribe = null, remoteWriteTimer = null, applyingRemoteState = false;
 
 // ===== PERSISTENCE =====
+function getSerializableState() {
+  return { menu, orders, orderIdCounter, itemIdCounter, gameItems, gamePurchases };
+}
 function saveState() {
-  const state = {
-    menu, orders, orderIdCounter, itemIdCounter, gameItems, gamePurchases
-  };
+  const state = getSerializableState();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   localStorage.setItem(STORAGE_SYNC_KEY, JSON.stringify({ at: Date.now(), state }));
+  if (!applyingRemoteState) scheduleRemoteSync(state);
 }
 function loadState() {
   const raw = localStorage.getItem(STORAGE_KEY);
@@ -838,6 +852,52 @@ function applyPersistedState(s) {
 function resetState() {
   menu = getDefaultMenu(); orders = []; orderIdCounter = 1; itemIdCounter = 1;
   gameItems = []; gamePurchases = []; gameCart = [];
+}
+function initFirebase() {
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+  } catch (error) {
+    console.error('Firebase init failed', error);
+  }
+}
+function scheduleRemoteSync(state = getSerializableState()) {
+  if (!db) return;
+  clearTimeout(remoteWriteTimer);
+  remoteWriteTimer = setTimeout(() => pushRemoteState(state), 150);
+}
+async function pushRemoteState(state) {
+  if (!db) return;
+  try {
+    await db.collection('app').doc('sharedState').set({
+      state,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy: role || 'local'
+    });
+  } catch (error) {
+    console.error('Remote sync failed', error);
+  }
+}
+function ensureRemoteStateSubscription() {
+  if (!db || remoteUnsubscribe) return;
+  remoteUnsubscribe = db.collection('app').doc('sharedState').onSnapshot((snapshot) => {
+    const data = snapshot.data();
+    if (!data || !data.state) {
+      pushRemoteState(getSerializableState());
+      return;
+    }
+    applyingRemoteState = true;
+    try {
+      applyPersistedState(data.state);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data.state));
+      localStorage.setItem(STORAGE_SYNC_KEY, JSON.stringify({ at: Date.now(), state: data.state }));
+      render();
+    } finally {
+      applyingRemoteState = false;
+    }
+  }, (error) => {
+    console.error('Remote subscription failed', error);
+  });
 }
 function getDefaultMenu() {
   return [
@@ -884,6 +944,7 @@ function broadcastFullSync() {
 function joinAs(selectedRole) {
   role = selectedRole;
   loadState();
+  ensureRemoteStateSubscription();
   applyDark();
   if (role === 'games') {
     document.getElementById('landingPage').classList.remove('active');
@@ -1720,6 +1781,8 @@ function playBeep() {
 function esc(s) { return s.replace(/'/g, "\\'"); }
 function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function escAttr(s) { return s.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+initFirebase();
 
 window.addEventListener('storage', (event) => {
   if (event.key !== STORAGE_SYNC_KEY || !event.newValue) return;
