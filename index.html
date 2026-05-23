@@ -870,6 +870,15 @@ function toggleDark() {
 function applyDark() {
   document.getElementById('cashierPage').classList.toggle('dark', darkMode);
 }
+function getOtherPeerId() {
+  return 'kermess-' + ROOM + '-' + (role === 'cashier' ? 'kitchen' : 'cashier');
+}
+function buildSyncPayload() {
+  return { type: 'sync', menu, orders, orderIdCounter, itemIdCounter };
+}
+function broadcastFullSync() {
+  sendMsg(buildSyncPayload());
+}
 
 // ===== PEER =====
 function joinAs(selectedRole) {
@@ -883,7 +892,7 @@ function joinAs(selectedRole) {
     return;
   }
   const myId = 'kermess-' + ROOM + '-' + role;
-  const otherId = 'kermess-' + ROOM + '-' + (role === 'cashier' ? 'kitchen' : 'cashier');
+  const otherId = getOtherPeerId();
   peer = new Peer(myId);
   peer.on('open', () => {
     document.getElementById('landingPage').classList.remove('active');
@@ -911,11 +920,11 @@ function tryConnect(otherId) {
 function setupConnection(c) {
   if (conn) conn.close();
   conn = c; connected = true; updateConnectionStatus(true);
-  sendMsg({ type: 'sync', menu, orders, orderIdCounter, itemIdCounter });
+  broadcastFullSync();
   conn.on('data', handleMessage);
   conn.on('close', () => {
     connected = false; updateConnectionStatus(false);
-    setTimeout(() => tryConnect('kermess-' + ROOM + '-' + (role === 'cashier' ? 'kitchen' : 'cashier')), 2000);
+    setTimeout(() => tryConnect(getOtherPeerId()), 2000);
   });
 }
 function sendMsg(msg) { if (conn && conn.open) conn.send(msg); }
@@ -929,6 +938,9 @@ function handleMessage(msg) {
       }
       if (msg.menu.length > 0) menu = msg.menu;
       saveState(); render(); break;
+    case 'sync-request':
+      if (role === 'cashier') broadcastFullSync();
+      break;
     case 'new-order':
       orders.unshift(msg.order);
       orderIdCounter = Math.max(orderIdCounter, msg.order.id + 1);
@@ -1012,6 +1024,7 @@ function addMenuItem() {
   const item = { id: Date.now(), name, price: usdValue, lbpPrice: lbpValue, category };
   menu.push(item); saveState(); renderCatTabs(); renderMenu();
   sendMsg({ type: 'menu-add', item });
+  broadcastFullSync();
   closeAddModal();
   showToast('Item added!');
 }
@@ -1019,6 +1032,7 @@ function deleteMenuItem(id) {
   if (!confirm('Remove this item?')) return;
   menu = menu.filter(m => m.id !== id); saveState(); renderCatTabs(); renderMenu();
   sendMsg({ type: 'menu-delete', id });
+  broadcastFullSync();
 }
 function normalizeMenuItems(rows) {
   return rows.map((row, index) => {
@@ -1070,7 +1084,7 @@ function importMenuExcel(event) {
       saveState();
       renderCatTabs();
       renderMenu();
-      sendMsg({ type: 'sync', menu, orders, orderIdCounter, itemIdCounter });
+      broadcastFullSync();
       showToast(`Imported ${items.length} menu items`);
     } catch {
       showToast('Could not read the Excel file', '#ef4444');
@@ -1152,6 +1166,7 @@ function sendOrder() {
   const order = { id: orderId, customer_name: name, created_at: new Date().toISOString(), items };
   orders.unshift(order); saveState();
   sendMsg({ type: 'new-order', order });
+  broadcastFullSync();
   cart = []; receivedAmount = 0;
   document.getElementById('customerName').value = '';
   renderCart();
@@ -1264,7 +1279,7 @@ function setFilter(f) {
 }
 function markDone(itemId) {
   for (const o of orders) for (const it of o.items) if (it.id === itemId) it.done = true;
-  saveState(); sendMsg({ type: 'item-done', itemId }); renderKitchen();
+  saveState(); sendMsg({ type: 'item-done', itemId }); broadcastFullSync(); renderKitchen();
 }
 function renderKitchen() {
   const grid = document.getElementById('ordersGrid');
@@ -1671,6 +1686,7 @@ function clearPreviousOrders() {
   gameReceivedAmount = 0;
   saveState();
   sendMsg({ type: 'clear-history' });
+  broadcastFullSync();
   render();
   showToast('Previous orders cleared!');
 }
@@ -1716,8 +1732,12 @@ window.addEventListener('storage', (event) => {
 });
 
 setInterval(() => {
-  if (peer && !connected) tryConnect('kermess-' + ROOM + '-' + (role === 'cashier' ? 'kitchen' : 'cashier'));
+  if (peer && !connected) tryConnect(getOtherPeerId());
 }, 5000);
+setInterval(() => {
+  if (role === 'cashier' && connected) broadcastFullSync();
+  else if (role === 'kitchen' && connected) sendMsg({ type: 'sync-request' });
+}, 4000);
 setInterval(() => { if (role === 'kitchen') renderKitchen(); }, 1000);
 </script>
 </body>
