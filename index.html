@@ -492,6 +492,23 @@
       padding: 12px 14px; border-radius: 10px; background: var(--input-bg); border: 1px solid var(--border);
       font-weight: 700; margin-bottom: 14px;
     }
+    .games-selected-list {
+      display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px;
+    }
+    .games-selected-item {
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 10px; background: var(--input-bg); border: 1px solid var(--border);
+    }
+    .games-selected-info { min-width: 0; }
+    .games-selected-name { font-weight: 700; font-size: 0.9rem; }
+    .games-selected-meta { color: var(--text-dim); font-size: 0.78rem; margin-top: 3px; }
+    .games-selected-controls { display: flex; align-items: center; gap: 6px; }
+    .games-selected-controls button {
+      width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text-mid); cursor: pointer; font-family: inherit; font-weight: 800;
+    }
+    .games-selected-controls button:hover { border-color: var(--accent); color: var(--accent); }
+    .games-selected-qty { min-width: 22px; text-align: center; font-weight: 800; }
     .games-shortcut-note {
       margin-top: -4px; margin-bottom: 14px; color: var(--text-dim); font-size: 0.82rem;
     }
@@ -708,48 +725,62 @@
       <button class="games-btn" onclick="leavePage()">Leave</button>
     </div>
   </div>
-  <div class="games-body">
-    <div class="games-panel">
-      <div class="games-panel-title">Saved Games</div>
-      <p class="games-help" id="gamesImportSummary">Add each game once. After that, it stays here as a one-tap button.</p>
+  <div class="cashier-body">
+    <div class="menu-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div class="panel-title" style="margin-bottom:0">Game Items</div>
+      </div>
+      <p class="games-help" id="gamesImportSummary" style="margin-bottom:14px;">Add each game once. Then use it like a cashier button.</p>
       <div class="games-add-grid">
         <input id="newGameItemName" type="text" placeholder="Game item name" autocomplete="off">
         <input id="newGameItemPrice" type="number" min="0" step="0.01" placeholder="Price">
         <button class="games-add-btn" onclick="addGameItem()">Save Game</button>
       </div>
       <div class="games-items-list" id="gamesItemsList"></div>
-    </div>
-    <div class="games-panel">
-      <div class="games-panel-title">Purchase Entry</div>
-      <div class="games-selected" id="selectedGameLabel">Tap one saved game to start.</div>
-      <div class="games-shortcut-note">You only need to create the game once. Next time, just press the saved game button.</div>
-      <div class="games-form-grid">
-        <div class="games-field">
-          <label for="gameFirstName">First Name</label>
-          <input id="gameFirstName" type="text" autocomplete="off">
-        </div>
-        <div class="games-field">
-          <label for="gameLastName">Last Name</label>
-          <input id="gameLastName" type="text" autocomplete="off">
-        </div>
-        <div class="games-field full">
-          <label for="gameAddress">Address</label>
-          <input id="gameAddress" type="text" autocomplete="off">
-        </div>
-        <div class="games-field">
-          <label for="gamePhone">Phone Number</label>
-          <input id="gamePhone" type="text" autocomplete="off">
-        </div>
-        <div class="games-field">
-          <label for="gameKids">Number of Kids</label>
-          <input id="gameKids" type="number" min="0" step="1" autocomplete="off">
-        </div>
-      </div>
-      <button class="games-submit" id="gamesSubmitBtn" onclick="saveGamePurchase()" disabled>Save Purchase</button>
 
-      <div class="games-records">
-        <div class="games-panel-title">Recent Entries</div>
-        <div class="games-record-list" id="gamesRecordsList"></div>
+      <div class="cart-items-section">
+        <div class="cart-section-title">Selected Games</div>
+        <div id="selectedGamesList"></div>
+      </div>
+    </div>
+
+    <div class="order-panel">
+      <div class="order-panel-inner">
+        <div class="panel-title">Current Game Order</div>
+        <input class="customer-input" type="text" id="gameFirstName" placeholder="First name..." autocomplete="off">
+        <input class="customer-input" type="text" id="gameLastName" placeholder="Last name..." autocomplete="off">
+        <input class="customer-input" type="text" id="gameAddress" placeholder="Address..." autocomplete="off">
+        <input class="customer-input" type="text" id="gamePhone" placeholder="Phone number..." autocomplete="off">
+        <input class="customer-input" type="number" id="gameKids" min="0" step="1" placeholder="Number of kids..." autocomplete="off">
+        <div id="gameCartSummary"></div>
+        <div id="gameCartFooter" style="display:none">
+          <div class="cart-total-row">
+            <span>Total</span>
+            <span class="cart-total-amount" id="gameTotalAmount">$0.00</span>
+          </div>
+          <button class="send-btn" id="gamesSubmitBtn" onclick="saveGamePurchase()">Save Game Order</button>
+          <div class="change-calc">
+            <div class="calc-title">Change Calculator</div>
+            <div class="currency-tabs">
+              <button class="currency-tab active" id="game-tab-usd" onclick="setGameCurrency('usd')">USD $</button>
+              <button class="currency-tab" id="game-tab-lbp" onclick="setGameCurrency('lbp')">LBP L.L.</button>
+            </div>
+            <div class="calc-display">
+              <span class="calc-label" id="gameReceivedLabel">Received $</span>
+              <span id="gameReceivedDisplay">0</span>
+            </div>
+            <div class="quick-cash" id="gameQuickCash"></div>
+            <div class="change-result zero" id="gameChangeResult">
+              <span class="change-label">Change</span>
+              <span id="gameChangeAmount">Tap an amount above</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="games-records">
+          <div class="panel-title" style="margin-top:18px;">Recent Entries</div>
+          <div class="games-record-list" id="gamesRecordsList"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -765,8 +796,10 @@ let gameItems = [], gamePurchases = [];
 let orderIdCounter = 1, itemIdCounter = 1;
 let filter = 'active', connected = false;
 let selectedCat = 'All';
-let selectedGameItemId = null;
+let gameCart = [];
 let darkMode = localStorage.getItem('kermess-dark') === 'true';
+let gameCurrency = 'usd';
+let gameReceivedAmount = 0;
 
 // ===== PERSISTENCE =====
 function saveState() {
@@ -790,7 +823,7 @@ function loadState() {
 }
 function resetState() {
   menu = getDefaultMenu(); orders = []; orderIdCounter = 1; itemIdCounter = 1;
-  gameItems = []; gamePurchases = []; selectedGameItemId = null;
+  gameItems = []; gamePurchases = []; gameCart = [];
 }
 function getDefaultMenu() {
   return [
@@ -1221,23 +1254,18 @@ function renderKitchen() {
 function renderGamesItems() {
   const list = document.getElementById('gamesItemsList');
   const summary = document.getElementById('gamesImportSummary');
-  const selectedItem = gameItems.find(item => item.id === selectedGameItemId);
   summary.textContent = gameItems.length
-    ? `${gameItems.length} saved game shortcut${gameItems.length === 1 ? '' : 's'} available.`
+    ? `${gameItems.length} saved game button${gameItems.length === 1 ? '' : 's'} available.`
     : 'Add each game once. After that, it stays here as a one-tap button.';
-  document.getElementById('selectedGameLabel').textContent = selectedItem
-    ? `Selected game: ${selectedItem.name}`
-    : 'Tap one saved game to start.';
-  document.getElementById('gamesSubmitBtn').disabled = !selectedItem;
   if (!gameItems.length) {
     list.innerHTML = '<div class="games-help">No saved games yet.</div>';
     return;
   }
   list.innerHTML = gameItems.map(item => `
     <div class="games-item-row">
-      <button class="games-item ${item.id === selectedGameItemId ? 'active' : ''}" onclick="selectGameItem('${esc(item.id)}')">
+      <button class="games-item" onclick="addGameToCart('${esc(item.id)}')">
         <div class="games-item-name">${escHtml(item.name)}</div>
-        <div class="games-item-meta">${item.price != null ? '$' + Number(item.price).toFixed(2) : 'Tap to use'}</div>
+        <div class="games-item-meta">${item.price != null ? '$' + Number(item.price).toFixed(2) : 'No price'}</div>
       </button>
       <button class="games-item-delete" onclick="deleteGameItem('${esc(item.id)}')" title="Delete item">&times;</button>
     </div>
@@ -1252,7 +1280,7 @@ function renderGamePurchases() {
   list.innerHTML = gamePurchases.slice(0, 12).map(entry => `
     <div class="games-record">
       <div class="games-record-top">
-        <div class="games-record-item">${escHtml(entry.item_name)}</div>
+        <div class="games-record-item">${escHtml(getGamePurchaseLabel(entry))}</div>
         <div class="games-record-time">${new Date(entry.purchased_at).toLocaleString()}</div>
       </div>
       <div class="games-record-client">${escHtml(entry.first_name)} ${escHtml(entry.last_name)}</div>
@@ -1265,11 +1293,18 @@ function renderGamePurchases() {
 }
 function renderGames() {
   renderGamesItems();
+  renderGameCart();
   renderGamePurchases();
 }
-function selectGameItem(id) {
-  selectedGameItemId = id;
-  renderGamesItems();
+function getGamePurchaseItems(entry) {
+  if (Array.isArray(entry.items) && entry.items.length) return entry.items;
+  if (entry.item_name) {
+    return [{ name: entry.item_name, price: entry.item_price || 0, qty: 1 }];
+  }
+  return [];
+}
+function getGamePurchaseLabel(entry) {
+  return getGamePurchaseItems(entry).map(item => `${item.qty}x ${item.name}`).join(', ');
 }
 function clearGameForm() {
   document.getElementById('gameFirstName').value = '';
@@ -1277,6 +1312,63 @@ function clearGameForm() {
   document.getElementById('gameAddress').value = '';
   document.getElementById('gamePhone').value = '';
   document.getElementById('gameKids').value = '';
+}
+function addGameToCart(id) {
+  const game = gameItems.find(item => item.id === id);
+  if (!game) return;
+  const existing = gameCart.find(item => item.id === id);
+  if (existing) existing.qty++;
+  else gameCart.push({ id: game.id, name: game.name, price: game.price || 0, qty: 1 });
+  renderGameCart();
+}
+function changeGameQty(id, delta) {
+  const item = gameCart.find(entry => entry.id === id);
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) gameCart = gameCart.filter(entry => entry.id !== id);
+  renderGameCart();
+}
+function renderGameCart() {
+  const list = document.getElementById('selectedGamesList');
+  const summary = document.getElementById('gameCartSummary');
+  const footer = document.getElementById('gameCartFooter');
+  if (gameCart.length === 0) {
+    list.innerHTML = '<div class="cart-empty">Tap game items to add them</div>';
+    summary.innerHTML = '<div class="cart-empty">No games selected yet</div>';
+    footer.style.display = 'none';
+    gameReceivedAmount = 0;
+    updateGameReceivedDisplay();
+    calcGameChange();
+    return;
+  }
+  list.innerHTML = gameCart.map(item => `
+    <div class="cart-item">
+      <div class="cart-item-top">
+        <div class="info">
+          <div class="qty-controls">
+            <button onclick="changeGameQty('${esc(item.id)}', -1)">&minus;</button>
+            <span class="qty">${item.qty}</span>
+            <button onclick="changeGameQty('${esc(item.id)}', 1)">+</button>
+          </div>
+          <span class="cart-item-name">${escHtml(item.name)}</span>
+        </div>
+        <span class="item-total">$${((item.price || 0) * item.qty).toFixed(2)}</span>
+      </div>
+    </div>
+  `).join('');
+  summary.innerHTML = gameCart.map(item =>
+    `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-light);font-size:0.85rem;">
+      <span>${item.qty}x ${escHtml(item.name)}</span>
+      <span style="font-weight:700;color:var(--accent)">$${((item.price || 0) * item.qty).toFixed(2)}</span>
+    </div>`
+  ).join('');
+  document.getElementById('gameTotalAmount').textContent = '$' + getGameTotal().toFixed(2);
+  footer.style.display = 'block';
+  renderGameQuickCash();
+  calcGameChange();
+}
+function getGameTotal() {
+  return gameCart.reduce((sum, item) => sum + (item.price || 0) * item.qty, 0);
 }
 function addGameItem() {
   const name = document.getElementById('newGameItemName').value.trim();
@@ -1296,7 +1388,6 @@ function addGameItem() {
     price: parsedPrice
   };
   gameItems.push(item);
-  selectedGameItemId = item.id;
   document.getElementById('newGameItemName').value = '';
   document.getElementById('newGameItemPrice').value = '';
   saveState();
@@ -1308,15 +1399,13 @@ function deleteGameItem(id) {
   if (!item) return;
   if (!confirm(`Delete "${item.name}"?`)) return;
   gameItems = gameItems.filter(entry => entry.id !== id);
-  if (selectedGameItemId === id) {
-    selectedGameItemId = gameItems.length ? gameItems[0].id : null;
-  }
+  gameCart = gameCart.filter(entry => entry.id !== id);
   saveState();
   renderGamesItems();
+  renderGameCart();
 }
 function saveGamePurchase() {
-  const selectedItem = gameItems.find(item => item.id === selectedGameItemId);
-  if (!selectedItem) { showToast('Select an item first', '#ef4444'); return; }
+  if (!gameCart.length) { showToast('Add at least one game item', '#ef4444'); return; }
   const firstName = document.getElementById('gameFirstName').value.trim();
   const lastName = document.getElementById('gameLastName').value.trim();
   const address = document.getElementById('gameAddress').value.trim();
@@ -1333,8 +1422,8 @@ function saveGamePurchase() {
   }
   gamePurchases.unshift({
     id: 'game-purchase-' + Date.now(),
-    item_name: selectedItem.name,
-    item_price: selectedItem.price,
+    items: gameCart.map(item => ({ name: item.name, price: item.price || 0, qty: item.qty })),
+    total: getGameTotal(),
     first_name: firstName,
     last_name: lastName,
     address,
@@ -1342,10 +1431,75 @@ function saveGamePurchase() {
     nb_kid: nbKid,
     purchased_at: new Date().toISOString()
   });
+  gameCart = [];
+  gameReceivedAmount = 0;
   saveState();
   clearGameForm();
+  renderGameCart();
   renderGamePurchases();
-  showToast('Game purchase saved!');
+  showToast('Game order saved!');
+}
+function setGameCurrency(c) {
+  gameCurrency = c;
+  document.getElementById('game-tab-usd').className = 'currency-tab' + (c === 'usd' ? ' active' : '');
+  document.getElementById('game-tab-lbp').className = 'currency-tab' + (c === 'lbp' ? ' active' : '');
+  document.getElementById('gameReceivedLabel').textContent = c === 'usd' ? 'Received $' : 'Received L.L.';
+  gameReceivedAmount = 0;
+  renderGameQuickCash();
+  calcGameChange();
+}
+function renderGameQuickCash() {
+  const total = getGameTotal();
+  let buttons = '';
+  if (gameCurrency === 'usd') {
+    buttons = [1, 2, 5, 10, 20, 50].map(a => `<button onclick="setGameReceived(${a})">$${a}</button>`).join('');
+  } else {
+    buttons = [50000, 100000, 250000, 500000, 1000000, 2000000].map(a => `<button onclick="setGameReceived(${a})">${(a/1000)}K</button>`).join('');
+  }
+  const exactVal = gameCurrency === 'usd' ? total : total * LBP_RATE;
+  buttons += `<button class="exact-btn" onclick="setGameReceived(${exactVal})">Exact</button>`;
+  buttons += `<button class="clear-btn" onclick="resetGameReceived()">Clear</button>`;
+  document.getElementById('gameQuickCash').innerHTML = buttons;
+  updateGameReceivedDisplay();
+}
+function setGameReceived(amount) {
+  if (amount === 0) gameReceivedAmount = 0;
+  else gameReceivedAmount += amount;
+  updateGameReceivedDisplay();
+  calcGameChange();
+}
+function resetGameReceived() {
+  gameReceivedAmount = 0;
+  updateGameReceivedDisplay();
+  calcGameChange();
+}
+function updateGameReceivedDisplay() {
+  const display = document.getElementById('gameReceivedDisplay');
+  if (!display) return;
+  if (gameReceivedAmount === 0) display.textContent = '0';
+  else if (gameCurrency === 'usd') display.textContent = '$' + gameReceivedAmount.toFixed(2);
+  else display.textContent = formatLBP(gameReceivedAmount) + ' L.L.';
+}
+function calcGameChange() {
+  const totalUSD = getGameTotal();
+  const el = document.getElementById('gameChangeResult');
+  const amt = document.getElementById('gameChangeAmount');
+  if (!el || !amt) return;
+  if (gameReceivedAmount === 0) {
+    el.className = 'change-result zero';
+    amt.textContent = 'Tap an amount above';
+    return;
+  }
+  const receivedUSD = gameCurrency === 'usd' ? gameReceivedAmount : gameReceivedAmount / LBP_RATE;
+  const changeUSD = receivedUSD - totalUSD;
+  if (changeUSD >= 0) {
+    el.className = 'change-result positive';
+    amt.textContent = `$${changeUSD.toFixed(2)} / ${formatLBP(changeUSD * LBP_RATE)} L.L.`;
+  } else {
+    el.className = 'change-result negative';
+    const owed = Math.abs(changeUSD);
+    amt.textContent = `Still owed: $${owed.toFixed(2)} / ${formatLBP(owed * LBP_RATE)} L.L.`;
+  }
 }
 
 // ===== EXCEL =====
@@ -1387,22 +1541,30 @@ function exportExcel() {
   XLSX.utils.book_append_sheet(wb, ordersSheet, 'Orders');
 
   const gameSheetRows = [[
-    'Item', 'Price', 'First Name', 'Last Name', 'Address', 'Phone Number', 'Number of Kids', 'Purchased At'
+    'Order ID', 'Item', 'Quantity', 'Price', 'Line Total', 'Order Total', 'First Name', 'Last Name', 'Address', 'Phone Number', 'Number of Kids', 'Purchased At'
   ]];
   for (const entry of gamePurchases) {
-    gameSheetRows.push([
-      entry.item_name,
-      entry.item_price == null ? '' : Number(entry.item_price.toFixed(2)),
-      entry.first_name,
-      entry.last_name,
-      entry.address,
-      entry.phone,
-      entry.nb_kid,
-      entry.purchased_at
-    ]);
+    const items = getGamePurchaseItems(entry);
+    const orderTotal = entry.total != null ? entry.total : items.reduce((sum, item) => sum + (item.price || 0) * item.qty, 0);
+    for (const item of items) {
+      gameSheetRows.push([
+        entry.id,
+        item.name,
+        item.qty,
+        Number((item.price || 0).toFixed(2)),
+        Number(((item.price || 0) * item.qty).toFixed(2)),
+        Number(orderTotal.toFixed(2)),
+        entry.first_name,
+        entry.last_name,
+        entry.address,
+        entry.phone,
+        entry.nb_kid,
+        entry.purchased_at
+      ]);
+    }
   }
   const gameSheet = XLSX.utils.aoa_to_sheet(gameSheetRows);
-  gameSheet['!cols'] = [{ wch: 22 }, { wch: 10 }, { wch: 16 }, { wch: 16 }, { wch: 30 }, { wch: 18 }, { wch: 14 }, { wch: 24 }];
+  gameSheet['!cols'] = [{ wch: 22 }, { wch: 20 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 16 }, { wch: 16 }, { wch: 30 }, { wch: 18 }, { wch: 14 }, { wch: 24 }];
   XLSX.utils.book_append_sheet(wb, gameSheet, 'Games Purchases');
 
   if (gameItems.length) {
