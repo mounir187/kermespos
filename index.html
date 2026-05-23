@@ -822,6 +822,9 @@ let darkMode = localStorage.getItem('kermess-dark') === 'true';
 let gameCurrency = 'usd';
 let gameReceivedAmount = 0;
 let db = null, remoteUnsubscribe = null, remoteWriteTimer = null, applyingRemoteState = false;
+function isCloudSyncActive() {
+  return !!db;
+}
 
 // ===== PERSISTENCE =====
 function getSerializableState() {
@@ -930,6 +933,10 @@ function toggleDark() {
 function applyDark() {
   document.getElementById('cashierPage').classList.toggle('dark', darkMode);
 }
+function showRolePage() {
+  document.getElementById('landingPage').classList.remove('active');
+  document.getElementById(role === 'cashier' ? 'cashierPage' : role === 'kitchen' ? 'kitchenPage' : 'gamesPage').classList.add('active');
+}
 function getOtherPeerId() {
   return 'kermess-' + ROOM + '-' + (role === 'cashier' ? 'kitchen' : 'cashier');
 }
@@ -937,6 +944,7 @@ function buildSyncPayload() {
   return { type: 'sync', menu, orders, orderIdCounter, itemIdCounter };
 }
 function broadcastFullSync() {
+  if (isCloudSyncActive()) return;
   sendMsg(buildSyncPayload());
 }
 
@@ -947,8 +955,13 @@ function joinAs(selectedRole) {
   ensureRemoteStateSubscription();
   applyDark();
   if (role === 'games') {
-    document.getElementById('landingPage').classList.remove('active');
-    document.getElementById('gamesPage').classList.add('active');
+    showRolePage();
+    render();
+    return;
+  }
+  if (isCloudSyncActive()) {
+    showRolePage();
+    updateConnectionStatus(true);
     render();
     return;
   }
@@ -956,8 +969,7 @@ function joinAs(selectedRole) {
   const otherId = getOtherPeerId();
   peer = new Peer(myId);
   peer.on('open', () => {
-    document.getElementById('landingPage').classList.remove('active');
-    document.getElementById(role === 'cashier' ? 'cashierPage' : 'kitchenPage').classList.add('active');
+    showRolePage();
     render();
     tryConnect(otherId);
   });
@@ -973,12 +985,14 @@ function joinAs(selectedRole) {
   });
 }
 function tryConnect(otherId) {
+  if (isCloudSyncActive()) return;
   if (connected) return;
   const c = peer.connect(otherId, { reliable: true });
   c.on('open', () => setupConnection(c));
   c.on('error', () => setTimeout(() => tryConnect(otherId), 3000));
 }
 function setupConnection(c) {
+  if (isCloudSyncActive()) return;
   if (conn) conn.close();
   conn = c; connected = true; updateConnectionStatus(true);
   broadcastFullSync();
@@ -988,7 +1002,10 @@ function setupConnection(c) {
     setTimeout(() => tryConnect(getOtherPeerId()), 2000);
   });
 }
-function sendMsg(msg) { if (conn && conn.open) conn.send(msg); }
+function sendMsg(msg) {
+  if (isCloudSyncActive()) return;
+  if (conn && conn.open) conn.send(msg);
+}
 function handleMessage(msg) {
   switch (msg.type) {
     case 'sync':
@@ -1028,6 +1045,13 @@ function handleMessage(msg) {
   }
 }
 function updateConnectionStatus(on) {
+  if (isCloudSyncActive()) {
+    const el = document.getElementById(role === 'cashier' ? 'cashierStatus' : 'kitchenStatus');
+    if (!el) return;
+    el.className = 'conn-badge on';
+    el.querySelector('.status-text').textContent = 'Cloud sync';
+    return;
+  }
   const el = document.getElementById(role === 'cashier' ? 'cashierStatus' : 'kitchenStatus');
   const other = role === 'cashier' ? 'Kitchen' : 'Cashier';
   el.className = 'conn-badge ' + (on ? 'on' : 'off');
@@ -1785,6 +1809,7 @@ function escAttr(s) { return s.replace(/"/g, '&quot;').replace(/</g, '&lt;').rep
 initFirebase();
 
 window.addEventListener('storage', (event) => {
+  if (isCloudSyncActive()) return;
   if (event.key !== STORAGE_SYNC_KEY || !event.newValue) return;
   try {
     const payload = JSON.parse(event.newValue);
@@ -1795,9 +1820,11 @@ window.addEventListener('storage', (event) => {
 });
 
 setInterval(() => {
+  if (isCloudSyncActive()) return;
   if (peer && !connected) tryConnect(getOtherPeerId());
 }, 5000);
 setInterval(() => {
+  if (isCloudSyncActive()) return;
   if (role === 'cashier' && connected) broadcastFullSync();
   else if (role === 'kitchen' && connected) sendMsg({ type: 'sync-request' });
 }, 4000);
